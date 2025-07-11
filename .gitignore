@@ -1,0 +1,60 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment folder
+venv/
+env/
+ENV/
+
+# macOS system files
+.DS_Store
+
+# Python egg info
+*.egg-info/
+.eggs/
+
+# Distribution / packaging
+build/
+dist/
+*.egg
+
+# Logs and databases
+*.log
+*.sqlite3
+
+# VSCode settings (if you use it)
+.vscode/
+
+# Python compiled files
+*.pyc
+
+# Ignore your board image output
+board.png
+
+# Ignore config and secrets
+config.py
+tokens.json
+.env
+
+# Ignore any secret key or token files you create
+*.key
+*.pem
+
+# Ignore coverage reports
+.coverage
+htmlcov/
+
+# Ignore pytest cache
+.pytest_cache/
+
+# Ignore pipenv files
+Pipfile.lock
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore any temporary or backup files
+*.bak
+*.swp
