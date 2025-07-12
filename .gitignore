@@ -32,11 +32,17 @@ dist/
 
 # Ignore your board image output
 board.png
+bingo_board.png
+
+# Log files
+*.log
+bot.log
 
 # Ignore config and secrets
 config.py
 tokens.json
 .env
+env.example
 
 # Ignore any secret key or token files you create
 *.key

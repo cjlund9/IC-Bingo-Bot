@@ -1,10 +1,10 @@
 import discord
 from discord.ui import Modal, TextInput
 from discord import Interaction
-from config import PLACEHOLDERS
+from config import load_placeholders
 from storage import save_completed, completed_dict
 
-HOLD_REVIEW_CHANNEL_NAME = "hold-review"  # or import from config if you have
+HOLD_REVIEW_CHANNEL_NAME = "hold-review"  # Or import from your config
 
 class HoldReasonModal(Modal, title="Hold Submission Explanation"):
     reason = TextInput(
@@ -29,7 +29,8 @@ class HoldReasonModal(Modal, title="Hold Submission Explanation"):
             await interaction.response.send_message("❌ Hold-review channel not found.", ephemeral=True)
             return
 
-        tile_name = PLACEHOLDERS[self.tile_index]
+        placeholders = load_placeholders()
+        tile_name = placeholders[self.tile_index]["name"]
         files = [await att.to_file() for att in self.original_message.attachments]
 
         content = (
@@ -41,6 +42,7 @@ class HoldReasonModal(Modal, title="Hold Submission Explanation"):
             f"Original submission message ID: {self.original_message.id}"
         )
 
+        from views.hold import HoldReviewView
         view = HoldReviewView(self.submitter, self.tile_index, self.original_message.channel.id, self.team)
 
         await hold_channel.send(content=content, files=files, view=view)
@@ -57,16 +59,27 @@ class DenyReasonModal(Modal, title="Deny Submission Explanation"):
         max_length=300,
     )
 
-    def __init__(self, submitter: discord.User, tile_index: int, original_channel_id: int, interaction_message: discord.Message, team: str):
+    def __init__(
+        self, 
+        submitter: discord.User, 
+        tile_index: int, 
+        original_channel_id: int, 
+        interaction_message: discord.Message, 
+        team: str,
+        drop: str
+    ):
         super().__init__()
         self.submitter = submitter
         self.tile_index = tile_index
         self.original_channel_id = original_channel_id
         self.interaction_message = interaction_message
         self.team = team
+        self.drop = drop
 
     async def on_submit(self, interaction: Interaction):
-        tile_name = PLACEHOLDERS[self.tile_index]
+        placeholders = load_placeholders()
+        tile_name = placeholders[self.tile_index]["name"]
+
         guild = interaction.guild
         orig_channel = guild.get_channel(self.original_channel_id)
 
@@ -75,9 +88,19 @@ class DenyReasonModal(Modal, title="Deny Submission Explanation"):
                 content=(
                     f"❌ Submission DENIED from hold by {interaction.user.mention} for {self.submitter.mention} "
                     f"on **{tile_name}** (Team: **{self.team}**).\n"
+                    f"Drop: **{self.drop}**\n"
                     f"**Reason:** {self.reason.value}"
                 )
             )
 
-        await self.interaction_message.edit(content=f"❌ Denied (from HOLD) **{self.submitter.display_name}** for **{tile_name}** (Team: {self.team})", view=None)
-        await interaction.response.send_message("Submission denied from hold with reason and notified original submissions channel.", ephemeral=True)
+        await self.interaction_message.edit(
+            content=(
+                f"❌ Denied (from HOLD) **{self.submitter.display_name}** for **{tile_name}** "
+                f"(Team: {self.team})\nDrop: **{self.drop}**"
+            ),
+            view=None
+        )
+        await interaction.response.send_message(
+            "Submission denied from hold with reason and notified original submissions channel.",
+            ephemeral=True
+        )

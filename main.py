@@ -1,11 +1,26 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
+import logging
 import config
 from commands.submit import setup_submit_command
 from commands.board_cmd import setup_board_command
+from commands.progress import setup_progress_command
+from commands.manage import setup_manage_command
+from commands.sync import setup_sync_command
 from core.update_board import update_board_message
 from commands.board_cmd import BoardCommand
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('bot.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -14,48 +29,58 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 @bot.event
 async def on_ready():
     await bot.wait_until_ready()
-    await bot.tree.sync(guild=discord.Object(id=config.GUILD_ID))
-    print(f"\u2705 Bot online as {bot.user}")
+    try:
+        await bot.tree.sync(guild=discord.Object(id=config.GUILD_ID))
+        logger.info(f"✅ Bot online as {bot.user}")
+        logger.info(f"✅ Synced commands for guild {config.GUILD_ID}")
+        
+        # Auto-sync data on startup
+        from storage import sync_completed_data_with_tiles
+        sync_results = sync_completed_data_with_tiles()
+        if sync_results.get("updated_tiles", 0) > 0:
+            logger.info(f"🔄 Auto-sync completed: {sync_results['updated_tiles']} tiles updated")
+        if sync_results.get("errors"):
+            logger.warning(f"⚠️ Auto-sync errors: {len(sync_results['errors'])} errors")
+            
+    except Exception as e:
+        logger.error(f"❌ Failed to sync commands: {e}")
 
 @bot.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    logger.error(f"Command error: {error}")
+    
     if isinstance(error, app_commands.errors.MissingRole):
         await interaction.response.send_message(
             "❌ You do not have permission to use this command. Admins only.",
             ephemeral=True
         )
-    else:
-        # For unexpected errors, log or display them
+    elif isinstance(error, app_commands.errors.CommandOnCooldown):
         await interaction.response.send_message(
-            f"❌ An unexpected error occurred: {error}",
+            f"⏰ This command is on cooldown. Try again in {error.retry_after:.2f} seconds.",
+            ephemeral=True
+        )
+    else:
+        # For unexpected errors, log them and show a generic message
+        logger.error(f"Unexpected error in command {interaction.command.name}: {error}")
+        await interaction.response.send_message(
+            "❌ An unexpected error occurred. Please try again later.",
             ephemeral=True
         )
 
 # Register application commands
-setup_submit_command(bot)
-setup_board_command(bot)
-
-@bot.tree.command(name="board", description="Display the current bingo board", guild=discord.Object(id=config.GUILD_ID))
-@app_commands.describe(team="Team to display board for (optional, admin only)")
-@app_commands.checks.has_role(config.ADMIN_ROLE)
-async def board_cmd(interaction: discord.Interaction, team: str = None):
-    from board import generate_board_image, OUTPUT_FILE, load_placeholders
-    from storage import get_completed
-
-    team = team.lower() if team else config.DEFAULT_TEAM
-    completed_dict = get_completed()
-    placeholders = load_placeholders()
-
-    if team != config.DEFAULT_TEAM and team.capitalize() not in config.TEAM_ROLES:
-        await interaction.response.send_message(
-            f"❌ Invalid team '{team}'. Valid teams: {', '.join(config.TEAM_ROLES)} or 'all'.",
-            ephemeral=True
-        )
-        return
-
-    generate_board_image(placeholders=placeholders, completed_dict=completed_dict, team=team)
-    file = discord.File(OUTPUT_FILE)
-    await interaction.response.send_message(file=file)
+try:
+    setup_submit_command(bot)
+    setup_board_command(bot)
+    setup_progress_command(bot)
+    setup_manage_command(bot)
+    setup_sync_command(bot)
+    logger.info("✅ Commands registered successfully")
+except Exception as e:
+    logger.error(f"❌ Failed to register commands: {e}")
 
 
-bot.run(config.TOKEN)
+
+try:
+    bot.run(config.TOKEN)
+except Exception as e:
+    logger.error(f"❌ Failed to start bot: {e}")

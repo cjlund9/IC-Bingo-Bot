@@ -4,7 +4,6 @@ from discord.ext import commands
 from discord.ext.commands import Bot
 
 from config import GUILD_ID, TEAM_ROLES, DEFAULT_TEAM, BOARD_CHANNEL_NAME, ADMIN_ROLE
-from board import generate_board_image, OUTPUT_FILE
 from storage import get_completed
 
 class BoardCommand(app_commands.Group):
@@ -25,30 +24,15 @@ class BoardCommand(app_commands.Group):
             return
 
         completed_dict = get_completed()
+        from board import generate_board_image, OUTPUT_FILE
         generate_board_image(placeholders=None, completed_dict=completed_dict, team=team)
 
         file = discord.File(OUTPUT_FILE)
         await interaction.response.send_message(file=file)
 
 async def update_board_message(guild: discord.Guild, bot_user: discord.User, team: str = DEFAULT_TEAM):
-    from board import generate_board_image, OUTPUT_FILE  # avoid circular import
-    from storage import get_completed
-
-    board_channel = discord.utils.get(guild.text_channels, name=BOARD_CHANNEL_NAME)
-    if not board_channel:
-        return
-
-    completed_dict = get_completed()
-    generate_board_image(placeholders=None, completed_dict=completed_dict, team=team)
-
-    async for message in board_channel.history(limit=20):
-        if message.author == bot_user and message.attachments:
-            file = discord.File(OUTPUT_FILE)
-            await message.edit(content=f"🗺️ Current Bingo Board (Team: {team})", attachments=[file])
-            return
-
-    file = discord.File(OUTPUT_FILE)
-    await board_channel.send(content=f"🗺️ Current Bingo Board (Team: {team})", file=file)
+    from core.update_board import update_board_message as update_board
+    await update_board(guild, bot_user, team)
 
 def setup_board_command(bot: Bot):
     board_cmd = BoardCommand()
