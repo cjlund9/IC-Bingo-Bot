@@ -1,5 +1,7 @@
+import os
 import discord
 from discord.ext import commands
+from dotenv import load_dotenv
 from discord import app_commands
 import logging
 import config
@@ -10,6 +12,18 @@ from commands.manage import setup_manage_command
 from commands.sync import setup_sync_command
 from core.update_board import update_board_message
 from commands.board_cmd import BoardCommand
+
+# Load environment variables from .env
+load_dotenv()
+TOKEN = os.getenv('DISCORD_TOKEN')
+LEADERSHIP_ROLE = os.getenv('LEADERSHIP_ROLE', 'leadership')
+
+# Enable all necessary intents
+intents = discord.Intents.default()
+intents.members = True
+intents.guilds = True
+intents.voice_states = True
+intents.message_content = True
 
 # Configure logging
 logging.basicConfig(
@@ -22,9 +36,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-intents = discord.Intents.default()
-intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
+
+# Store leadership role in bot config for cogs to use
+bot.leadership_role = LEADERSHIP_ROLE
 
 @bot.event
 async def on_ready():
