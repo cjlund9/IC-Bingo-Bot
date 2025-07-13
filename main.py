@@ -14,6 +14,7 @@ from commands.auto_voice import setup as setup_auto_voice
 from commands.generate_teams import setup as setup_generate_teams
 from core.update_board import update_board_message
 from commands.board_cmd import BoardCommand
+import asyncio
 
 # Load environment variables from .env
 load_dotenv()
@@ -84,20 +85,22 @@ async def on_app_command_error(interaction: discord.Interaction, error: app_comm
             ephemeral=True
         )
 
-# Register application commands
-try:
-    setup_submit_command(bot)
-    setup_board_command(bot)
-    setup_progress_command(bot)
-    setup_manage_command(bot)
-    setup_sync_command(bot)
-    setup_auto_voice(bot)  # Add auto voice cog
-    setup_generate_teams(bot)  # Add team generation cog
-    logger.info("✅ Commands registered successfully")
-except Exception as e:
-    logger.error(f"❌ Failed to register commands: {e}")
+async def main():
+    # Register application commands
+    try:
+        setup_submit_command(bot)
+        setup_board_command(bot)
+        setup_progress_command(bot)
+        setup_manage_command(bot)
+        setup_sync_command(bot)
+        await setup_auto_voice(bot)  # Add auto voice cog
+        await setup_generate_teams(bot)  # Add team generation cog
+        
+        logger.info("✅ Commands registered successfully")
+    except Exception as e:
+        logger.error(f"❌ Failed to register commands: {e}")
 
-try:
-    bot.run(config.TOKEN)
-except Exception as e:
-    logger.error(f"❌ Failed to start bot: {e}")
+    await bot.start(config.TOKEN)
+
+if __name__ == "__main__":
+    asyncio.run(main())

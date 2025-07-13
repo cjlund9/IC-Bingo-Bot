@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord import app_commands
 import requests
 import json
 import os
@@ -33,29 +34,31 @@ def load_teams():
         return json.load(f)
 
 def has_leadership_role():
-    async def predicate(ctx):
-        role_name = getattr(ctx.bot, 'leadership_role', 'leadership')
-        return discord.utils.get(ctx.author.roles, name=role_name) is not None
-    return commands.check(predicate)
+    async def predicate(interaction: discord.Interaction):
+        role_name = getattr(interaction.client, 'leadership_role', 'leadership')
+        return discord.utils.get(interaction.user.roles, name=role_name) is not None
+    return app_commands.check(predicate)
 
 class TeamGen(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name='generate_teams')
+    @app_commands.command(name="generate_teams", description="Generate 2 balanced teams from members with the event role")
     @has_leadership_role()
-    async def generate_teams(self, ctx):
+    async def generate_teams(self, interaction: discord.Interaction):
         """Generate 2 balanced teams from members with the event role."""
-        guild = ctx.guild
+        await interaction.response.defer()
+        
+        guild = interaction.guild
         role = discord.utils.get(guild.roles, name=ROLE_NAME)
         if not role:
-            await ctx.send(f"Role '{ROLE_NAME}' not found.")
+            await interaction.followup.send(f"Role '{ROLE_NAME}' not found.")
             return
         members = [m for m in role.members if not m.bot]
         if len(members) < 2:
-            await ctx.send("Not enough participants to form teams.")
+            await interaction.followup.send("Not enough participants to form teams.")
             return
-        await ctx.send(f"Fetching stats for {len(members)} participants...")
+        await interaction.followup.send(f"Fetching stats for {len(members)} participants...")
         player_stats = []
         not_found = []
         for member in members:
@@ -66,9 +69,9 @@ class TeamGen(commands.Cog):
             else:
                 not_found.append(rsn)
         if not_found:
-            await ctx.send(f"Could not find WOM profiles for: {', '.join(not_found)}. Please update your nickname or register on WOM.")
+            await interaction.followup.send(f"Could not find WOM profiles for: {', '.join(not_found)}. Please update your nickname or register on WOM.")
         if len(player_stats) < 2:
-            await ctx.send("Not enough valid participants to form teams.")
+            await interaction.followup.send("Not enough valid participants to form teams.")
             return
         # Sort by sum of stats
         player_stats.sort(key=lambda x: (x['ehb'] + x['ehp'] + x['slayer_level']), reverse=True)
@@ -88,19 +91,22 @@ class TeamGen(commands.Cog):
             for p in players:
                 msg += f"- {p['rsn']} (EHB: {p['ehb']}, EHP: {p['ehp']}, Slayer: {p['slayer_level']})\n"
             msg += f"Total: {sum(p['ehb'] + p['ehp'] + p['slayer_level'] for p in players)}\n"
-        await ctx.send(msg)
+        await interaction.followup.send(msg)
 
-    @commands.command(name='move_player')
+    @app_commands.command(name="move_player", description="Move a player to a different team")
+    @app_commands.describe(player="Player name to move", team="Team to move player to")
     @has_leadership_role()
-    async def move_player(self, ctx, player: str, team: str):
+    async def move_player(self, interaction: discord.Interaction, player: str, team: str):
         """Move a player to a different team (leadership only)."""
+        await interaction.response.defer()
+        
         teams = load_teams()
         if not teams:
-            await ctx.send("No teams have been generated yet.")
+            await interaction.followup.send("No teams have been generated yet.")
             return
         team = team.title()
         if team not in teams:
-            await ctx.send(f"Team '{team}' does not exist. Valid teams: {', '.join(teams.keys())}")
+            await interaction.followup.send(f"Team '{team}' does not exist. Valid teams: {', '.join(teams.keys())}")
             return
         # Find and remove player from any team
         found = False
@@ -114,19 +120,22 @@ class TeamGen(commands.Cog):
             if found:
                 break
         if not found:
-            await ctx.send(f"Player '{player}' not found in any team.")
+            await interaction.followup.send(f"Player '{player}' not found in any team.")
             return
         save_teams(teams)
-        await ctx.send(f"Moved {player} to {team}.")
-        await self.show_teams(ctx)
+        await interaction.followup.send(f"Moved {player} to {team}.")
+        await self.show_teams(interaction)
 
-    @commands.command(name='swap_players')
+    @app_commands.command(name="swap_players", description="Swap two players between teams")
+    @app_commands.describe(player1="First player name", player2="Second player name")
     @has_leadership_role()
-    async def swap_players(self, ctx, player1: str, player2: str):
+    async def swap_players(self, interaction: discord.Interaction, player1: str, player2: str):
         """Swap two players between teams (leadership only)."""
+        await interaction.response.defer()
+        
         teams = load_teams()
         if not teams:
-            await ctx.send("No teams have been generated yet.")
+            await interaction.followup.send("No teams have been generated yet.")
             return
         p1_team = p2_team = None
         p1_obj = p2_obj = None
@@ -137,10 +146,10 @@ class TeamGen(commands.Cog):
                 if p['rsn'].lower() == player2.lower():
                     p2_team, p2_obj = t, p
         if not p1_obj or not p2_obj:
-            await ctx.send(f"Could not find both players in teams.")
+            await interaction.followup.send(f"Could not find both players in teams.")
             return
         if p1_team == p2_team:
-            await ctx.send("Both players are already on the same team.")
+            await interaction.followup.send("Both players are already on the same team.")
             return
         # Swap
         teams[p1_team].remove(p1_obj)
@@ -148,15 +157,15 @@ class TeamGen(commands.Cog):
         teams[p1_team].append(p2_obj)
         teams[p2_team].append(p1_obj)
         save_teams(teams)
-        await ctx.send(f"Swapped {player1} and {player2} between teams.")
-        await self.show_teams(ctx)
+        await interaction.followup.send(f"Swapped {player1} and {player2} between teams.")
+        await self.show_teams(interaction)
 
-    @commands.command(name='show_teams')
-    async def show_teams(self, ctx):
+    @app_commands.command(name="show_teams", description="Show the current teams")
+    async def show_teams(self, interaction: discord.Interaction):
         """Show the current teams."""
         teams = load_teams()
         if not teams:
-            await ctx.send("No teams have been generated yet.")
+            await interaction.response.send_message("No teams have been generated yet.")
             return
         embed = discord.Embed(title="Current Teams", color=0xFFD700)
         for team, players in teams.items():
@@ -166,7 +175,7 @@ class TeamGen(commands.Cog):
             total = sum(p['ehb'] + p['ehp'] + p['slayer_level'] for p in players)
             desc += f"**Total:** {total}"
             embed.add_field(name=team, value=desc or 'No players', inline=False)
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
-def setup(bot):
-    bot.add_cog(TeamGen(bot)) 
+async def setup(bot):
+    await bot.add_cog(TeamGen(bot)) 

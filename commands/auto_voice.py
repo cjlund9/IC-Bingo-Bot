@@ -90,9 +90,14 @@ class AutoVoice(commands.Cog):
             "Click a button to create a temporary voice channel:", view=view, ephemeral=True
         )
 
-    @commands.command(name='set_temp_voice')
-    @commands.has_permissions(administrator=True)
-    async def set_temp_voice(self, ctx, trigger: str = None, category: discord.CategoryChannel = None, name_pattern: str = None):
+    @app_commands.command(name="set_temp_voice", description="Set trigger channel, category, and name pattern for temp voice channels")
+    @app_commands.describe(
+        trigger="Trigger channel name (optional)",
+        category="Category channel (optional)",
+        name_pattern="Name pattern for channels (optional)"
+    )
+    @app_commands.checks.has_permissions(administrator=True)
+    async def set_temp_voice(self, interaction: discord.Interaction, trigger: str = None, category: discord.CategoryChannel = None, name_pattern: str = None):
         """Set trigger channel, category, and name pattern for temp voice channels (admin only)."""
         if trigger:
             self.settings['trigger'] = trigger
@@ -101,17 +106,17 @@ class AutoVoice(commands.Cog):
         if name_pattern:
             self.settings['name_pattern'] = name_pattern
         save_settings(self.settings)
-        await ctx.send(f"Temp voice settings updated. Use !show_temp_voice_settings to view.")
+        await interaction.response.send_message(f"Temp voice settings updated. Use /show_temp_voice_settings to view.", ephemeral=True)
 
-    @commands.command(name='show_temp_voice_settings')
-    async def show_temp_voice_settings(self, ctx):
+    @app_commands.command(name="show_temp_voice_settings", description="Show current temp voice channel settings")
+    async def show_temp_voice_settings(self, interaction: discord.Interaction):
         """Show current temp voice channel settings."""
         trigger = self.settings.get('trigger', DEFAULT_TRIGGER)
         cat_id = self.settings.get('category')
         name_pattern = self.settings.get('name_pattern', DEFAULT_NAME_PATTERN)
-        category = discord.utils.get(ctx.guild.categories, id=cat_id) if cat_id else None
+        category = discord.utils.get(interaction.guild.categories, id=cat_id) if cat_id else None
         msg = f"Trigger channel: {trigger}\nCategory: {category.name if category else 'Default'}\nName pattern: {name_pattern}"
-        await ctx.send(msg)
+        await interaction.response.send_message(msg, ephemeral=True)
 
-def setup(bot):
-    bot.add_cog(AutoVoice(bot)) 
+async def setup(bot):
+    await bot.add_cog(AutoVoice(bot)) 
