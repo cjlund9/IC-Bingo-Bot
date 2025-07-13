@@ -17,7 +17,7 @@ from commands.sync import setup_sync_command
 from commands.teams_consolidated import setup_teams_consolidated_command
 from commands.stats import setup_stats_command
 from commands.leaderboard_cmd import setup_leaderboard_commands
-from commands.shop_cmd import setup_shop_commands
+# from commands.shop_cmd import setup_shop_commands
 from commands.monitor import setup_monitor_command
 
 from core.update_board import update_board_message
@@ -232,7 +232,7 @@ async def main():
         setup_teams_consolidated_command(bot)
         setup_stats_command(bot)
         setup_leaderboard_commands(bot)
-        setup_shop_commands(bot)
+        # setup_shop_commands(bot)
         setup_monitor_command(bot)
 
         
