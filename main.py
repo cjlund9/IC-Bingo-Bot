@@ -10,7 +10,7 @@ from commands.board_cmd import setup_board_command
 from commands.progress import setup_progress_command
 from commands.manage import setup_manage_command
 from commands.sync import setup_sync_command
-from commands.teams import setup_teams_command
+from commands.teams_consolidated import setup_teams_consolidated_command
 from commands.stats import setup_stats_command
 from commands.leaderboard_cmd import setup_leaderboard_commands
 from commands.shop_cmd import setup_shop_commands
@@ -103,7 +103,7 @@ async def main():
         setup_progress_command(bot)
         setup_manage_command(bot)
         setup_sync_command(bot)
-        setup_teams_command(bot)
+        setup_teams_consolidated_command(bot)
         setup_stats_command(bot)
         setup_leaderboard_commands(bot)
         setup_shop_commands(bot)

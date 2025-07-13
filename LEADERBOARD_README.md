@@ -89,6 +89,8 @@ The leaderboard system is integrated into the existing IC Bingo Bot. No addition
 - `/award_points <points> <reason> [user] [role]` - Award points to a user or all users with a role
 - `/icpoints <user> <type> <count/tier> [notes]` - Submit collection log or combat achievement points
 - `/event_penalty <event_name> <penalty_amount> [participants_role] [non_participants]` - Apply buy-in penalty to non-participants
+- `/teams generate` - Generate balanced teams
+- `/teams post [channel]` - Post team rosters
 - `/shop add <name> <description> <cost> [category] [quantity]` - Add shop item
 - `/shop remove <item_id>` - Remove shop item
 
