@@ -80,7 +80,7 @@ The leaderboard system is integrated into the existing IC Bingo Bot. No addition
 - `/my_points` - Check your current points balance
 
 ### Admin Commands
-- `/award_points <user> <points> <reason>` - Award points to a user
+- `/award_points <points> <reason> [user] [role]` - Award points to a user or all users with a role
 - `/icpoints <user> <type> <count/tier> [notes]` - Submit collection log or combat achievement points
 - `/add_shop_item <name> <description> <cost> [category] [quantity]` - Add shop item
 - `/remove_shop_item <item_id>` - Remove shop item
@@ -115,7 +115,12 @@ The system is designed to run alongside the existing JSON-based storage system. 
 
 ### Awarding Competition Points
 ```
-/award_points @user 20 "Skill of the Week - 1st place"
+/award_points 20 "Skill of the Week - 1st place" @user
+```
+
+### Awarding Points to Role Members
+```
+/award_points 10 "Event Participation Bonus" @role
 ```
 
 ### Submitting Collection Log
