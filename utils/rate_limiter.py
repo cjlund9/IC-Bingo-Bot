@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 # Global rate limiting storage
 command_cooldowns = defaultdict(lambda: defaultdict(float))
-user_command_counts = defaultdict(lambda: defaultdict(int))
+user_command_counts = defaultdict(lambda: defaultdict(list))
 
 def rate_limit(cooldown_seconds: float = 3.0, max_requests_per_hour: int = 100):
     """
