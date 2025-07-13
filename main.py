@@ -12,6 +12,8 @@ from commands.manage import setup_manage_command
 from commands.sync import setup_sync_command
 from commands.teams import setup_teams_command
 from commands.stats import setup_stats_command
+from commands.leaderboard_cmd import setup_leaderboard_commands
+from commands.shop_cmd import setup_shop_commands
 
 from core.update_board import update_board_message
 import asyncio
@@ -103,6 +105,8 @@ async def main():
         setup_sync_command(bot)
         setup_teams_command(bot)
         setup_stats_command(bot)
+        setup_leaderboard_commands(bot)
+        setup_shop_commands(bot)
 
         
         logger.info("✅ Application commands registered successfully")
