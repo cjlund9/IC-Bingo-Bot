@@ -1,19 +1,26 @@
+"""
+Storage module for managing bingo game progress data
+Handles data persistence, caching, and validation
+"""
+
 import json
 import os
 import logging
 import time
 from typing import Dict, Any, Optional, List
+
 from config import COMPLETED_FILE
+
+logger = logging.getLogger(__name__)
 
 # Memory optimization: cache for frequently accessed data
 _cache = {}
 _cache_timestamps = {}
 _CACHE_TTL = 300  # 5 minutes cache TTL
 
-logger = logging.getLogger(__name__)
-
 # Initialize completed_dict
 completed_dict: Dict[str, Any] = {}
+
 
 def load_completed_data() -> Dict[str, Any]:
     """Load completed data from file with error handling"""
@@ -33,6 +40,7 @@ def load_completed_data() -> Dict[str, Any]:
         logger.error(f"Error loading completed data: {e}")
         completed_dict = {}
     return completed_dict
+
 
 def save_completed() -> bool:
     """Save completed data to file with error handling and cache invalidation"""
@@ -64,6 +72,7 @@ def save_completed() -> bool:
                 logger.error(f"Failed to restore backup: {restore_error}")
         return False
 
+
 def get_completed() -> Dict[str, Any]:
     """Get completed data, loading if necessary with caching"""
     global completed_dict
@@ -87,6 +96,7 @@ def get_completed() -> Dict[str, Any]:
     
     return completed_dict
 
+
 def cleanup_cache():
     """Clean up expired cache entries to prevent memory leaks"""
     current_time = time.time()
@@ -105,10 +115,12 @@ def cleanup_cache():
     if expired_keys:
         logger.debug(f"Cleaned up {len(expired_keys)} expired cache entries")
 
+
 def validate_team(team: str) -> bool:
     """Validate team name"""
     from config import TEAM_ROLES
     return team.lower() in {role.lower() for role in TEAM_ROLES}
+
 
 def validate_tile_index(tile_index: int) -> bool:
     """Validate tile index"""
@@ -118,6 +130,7 @@ def validate_tile_index(tile_index: int) -> bool:
         return 0 <= tile_index < len(placeholders)
     except Exception:
         return False
+
 
 def sync_completed_data_with_tiles() -> Dict[str, Any]:
     """
@@ -189,6 +202,7 @@ def sync_completed_data_with_tiles() -> Dict[str, Any]:
         logger.error(f"Error syncing completed data: {e}")
         return {"updated_tiles": 0, "errors": [str(e)]}
 
+
 def get_tile_progress(team: str, tile_index: int) -> Dict[str, Any]:
     """
     Get detailed progress information for a specific tile and team
@@ -254,6 +268,7 @@ def get_tile_progress(team: str, tile_index: int) -> Dict[str, Any]:
         logger.error(f"Error getting tile progress: {e}")
         return {}
 
+
 def get_team_progress(team: str) -> Dict[str, Any]:
     """
     Get overall progress for a team
@@ -293,6 +308,7 @@ def get_team_progress(team: str) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Error getting team progress: {e}")
         return {}
+
 
 def mark_tile_submission(team: str, tile_index: int, user_id: int, drop: str, quantity: int = 1) -> bool:
     """
@@ -372,6 +388,7 @@ def mark_tile_submission(team: str, tile_index: int, user_id: int, drop: str, qu
         logger.error(f"Error marking tile submission: {e}")
         return False
 
+
 def remove_tile_submission(team: str, tile_index: int, submission_index: int) -> bool:
     """
     Remove a specific submission from a tile
@@ -411,6 +428,3 @@ def remove_tile_submission(team: str, tile_index: int, submission_index: int) ->
     except Exception as e:
         logger.error(f"Error removing tile submission: {e}")
         return False
-
-# Initialize data on module load
-load_completed_data()

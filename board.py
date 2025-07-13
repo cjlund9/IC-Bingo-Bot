@@ -1,3 +1,8 @@
+"""
+Board generation module for creating bingo board images
+Handles image creation, styling, and progress visualization
+"""
+
 import os
 import json
 import textwrap
@@ -7,6 +12,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 logger = logging.getLogger(__name__)
 
+# Constants
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BOARD_SIZE = 10
 TILE_SIZE = 80
@@ -15,12 +21,14 @@ FONT_SIZE = 12
 OUTPUT_FILE = os.path.join(BASE_DIR, "board.png")
 GENERATED_BOARD_PATH = os.path.join(BASE_DIR, "tiles.json")
 
+# Colors
 COLOR_TILE = (70, 50, 20, 255)         # Original RuneScape brown
 COLOR_TEXT = (255, 255, 204, 255)
 COLOR_TEXT_COMPLETED = (230, 230, 230, 255)
 COLOR_COMPLETED_TILE = (0, 153, 76, 255)
 COLOR_IN_PROGRESS_TILE = (255, 224, 102, 255)  # Light yellow
 COLOR_TEXT_IN_PROGRESS = (0, 0, 0, 255)  # Black text for better contrast
+
 
 def load_placeholders() -> List[Dict[str, Any]]:
     """Load placeholders from JSON file with error handling"""
@@ -40,6 +48,7 @@ def load_placeholders() -> List[Dict[str, Any]]:
         logger.error(f"Failed to load placeholders: {e}")
         return []
 
+
 def validate_inputs(placeholders: List[Dict[str, Any]], completed_dict: Dict[str, Any], team: str) -> bool:
     """Validate input parameters"""
     if not placeholders:
@@ -56,6 +65,7 @@ def validate_inputs(placeholders: List[Dict[str, Any]], completed_dict: Dict[str
     
     return True
 
+
 def get_font() -> ImageFont.FreeTypeFont:
     """Get font with fallback to default"""
     try:
@@ -69,6 +79,7 @@ def get_font() -> ImageFont.FreeTypeFont:
         logger.warning(f"Failed to load custom font: {e}, using default")
         font = ImageFont.load_default()
     return font
+
 
 def calculate_tile_status(completed_dict: Dict[str, Any], team: str) -> Dict[int, int]:
     """Calculate tile status for the given team"""
@@ -95,11 +106,17 @@ def calculate_tile_status(completed_dict: Dict[str, Any], team: str) -> Dict[int
     
     return tile_status
 
+
 def generate_board_image(placeholders: Optional[List[Dict[str, Any]]] = None, 
                         completed_dict: Optional[Dict[str, Any]] = None, 
                         team: str = "all") -> bool:
     """
     Generate bingo board image
+    
+    Args:
+        placeholders: List of tile data (optional, will load if not provided)
+        completed_dict: Dictionary of completed data (optional)
+        team: Team to generate board for (defaults to "all")
     
     Returns:
         bool: True if successful, False otherwise

@@ -1,14 +1,25 @@
+"""
+IC-Bingo-Bot - Discord bot for managing RuneScape bingo games
+Main entry point with performance monitoring and rate limiting
+"""
+
 import os
-import discord
-from discord.ext import commands
-from dotenv import load_dotenv
-from discord import app_commands
-import logging
-import config
-import psutil
 import asyncio
 import time
+import logging
+import logging.handlers
 from collections import defaultdict
+
+import discord
+from discord.ext import commands
+from discord import app_commands
+from dotenv import load_dotenv
+import psutil
+
+# Load environment variables
+load_dotenv()
+
+# Import command modules
 from commands.submit import setup_submit_command
 from commands.board_cmd import setup_board_command
 from commands.progress import setup_progress_command
@@ -17,25 +28,18 @@ from commands.sync import setup_sync_command
 from commands.teams_consolidated import setup_teams_consolidated_command
 from commands.stats import setup_stats_command
 from commands.leaderboard_cmd import setup_leaderboard_commands
-# from commands.shop_cmd import setup_shop_commands
+# from commands.shop_cmd import setup_shop_commands  # Temporarily disabled
 from commands.monitor import setup_monitor_command
 
-from core.update_board import update_board_message
+# Import utilities
+from utils.rate_limiter import cleanup_old_rate_limits, get_rate_limit_stats
+from storage import cleanup_cache
 
-# Load environment variables from .env
-load_dotenv()
+# Configuration
 TOKEN = os.getenv('DISCORD_BOT_TOKEN')
 LEADERSHIP_ROLE = os.getenv('LEADERSHIP_ROLE', 'leadership')
 
-# Enable all necessary intents
-intents = discord.Intents.default()
-intents.members = True
-intents.guilds = True
-intents.voice_states = True
-intents.message_content = True
-
-# Configure logging with rotation to prevent large log files
-import logging.handlers
+# Configure logging with rotation
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -50,8 +54,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Performance monitoring
+
 class PerformanceMonitor:
+    """Monitor bot performance and resource usage"""
+    
     def __init__(self):
         self.command_times = defaultdict(list)
         self.memory_usage = []
@@ -99,47 +105,47 @@ class PerformanceMonitor:
                 }
         return stats
 
+
 # Global performance monitor
 performance_monitor = PerformanceMonitor()
 
-bot = commands.Bot(command_prefix="!", intents=intents)
+# Bot setup
+intents = discord.Intents.default()
+intents.members = True
+intents.guilds = True
+intents.voice_states = True
+intents.message_content = True
 
-# Store leadership role in bot config for cogs to use
+bot = commands.Bot(command_prefix="!", intents=intents)
 bot.leadership_role = LEADERSHIP_ROLE
 
-# Import rate limiting utilities
-from utils.rate_limiter import cleanup_old_rate_limits, get_rate_limit_stats
-from storage import cleanup_cache
 
-@bot.event
-async def on_ready():
-    await bot.wait_until_ready()
+def cleanup_temp_files():
+    """Clean up temporary files to prevent disk space issues"""
+    import glob
+    
     try:
-        # Wait a moment for all cogs to be fully loaded
-        await asyncio.sleep(2)
+        # Clean up temporary board files older than 1 hour
+        current_time = time.time()
+        temp_patterns = [
+            "board_*.png",
+            "bingo_board_*.png",
+            "temp_*.png"
+        ]
         
-        # Sync commands after cogs are loaded
-        synced = await bot.tree.sync(guild=discord.Object(id=config.GUILD_ID))
-        logger.info(f"✅ Bot online as {bot.user}")
-        logger.info(f"✅ Synced {len(synced)} commands for guild {config.GUILD_ID}")
-        
-        # Log all synced commands for debugging
-        for cmd in synced:
-            logger.info(f"  - /{cmd.name}")
-        
-        # Auto-sync data on startup
-        from storage import sync_completed_data_with_tiles
-        sync_results = sync_completed_data_with_tiles()
-        if sync_results.get("updated_tiles", 0) > 0:
-            logger.info(f"🔄 Auto-sync completed: {sync_results['updated_tiles']} tiles updated")
-        if sync_results.get("errors"):
-            logger.warning(f"⚠️ Auto-sync errors: {len(sync_results['errors'])} errors")
-        
-        # Start background tasks
-        bot.loop.create_task(background_maintenance())
-            
+        for pattern in temp_patterns:
+            for file_path in glob.glob(pattern):
+                try:
+                    file_age = current_time - os.path.getmtime(file_path)
+                    if file_age > 3600:  # 1 hour
+                        os.remove(file_path)
+                        logger.debug(f"Cleaned up temp file: {file_path}")
+                except OSError:
+                    pass  # File might be in use or already deleted
+                    
     except Exception as e:
-        logger.error(f"❌ Failed to sync commands: {e}")
+        logger.error(f"Error cleaning up temp files: {e}")
+
 
 async def background_maintenance():
     """Background task for maintenance operations"""
@@ -172,35 +178,43 @@ async def background_maintenance():
             logger.error(f"Error in background maintenance: {e}")
             await asyncio.sleep(300)
 
-def cleanup_temp_files():
-    """Clean up temporary files to prevent disk space issues"""
-    import glob
-    import os
-    
+
+@bot.event
+async def on_ready():
+    """Bot startup event"""
+    await bot.wait_until_ready()
     try:
-        # Clean up temporary board files older than 1 hour
-        current_time = time.time()
-        temp_patterns = [
-            "board_*.png",
-            "bingo_board_*.png",
-            "temp_*.png"
-        ]
+        # Wait a moment for all cogs to be fully loaded
+        await asyncio.sleep(2)
         
-        for pattern in temp_patterns:
-            for file_path in glob.glob(pattern):
-                try:
-                    file_age = current_time - os.path.getmtime(file_path)
-                    if file_age > 3600:  # 1 hour
-                        os.remove(file_path)
-                        logger.debug(f"Cleaned up temp file: {file_path}")
-                except OSError:
-                    pass  # File might be in use or already deleted
-                    
+        # Sync commands after cogs are loaded
+        import config
+        synced = await bot.tree.sync(guild=discord.Object(id=config.GUILD_ID))
+        logger.info(f"✅ Bot online as {bot.user}")
+        logger.info(f"✅ Synced {len(synced)} commands for guild {config.GUILD_ID}")
+        
+        # Log all synced commands for debugging
+        for cmd in synced:
+            logger.info(f"  - /{cmd.name}")
+        
+        # Auto-sync data on startup
+        from storage import sync_completed_data_with_tiles
+        sync_results = sync_completed_data_with_tiles()
+        if sync_results.get("updated_tiles", 0) > 0:
+            logger.info(f"🔄 Auto-sync completed: {sync_results['updated_tiles']} tiles updated")
+        if sync_results.get("errors"):
+            logger.warning(f"⚠️ Auto-sync errors: {len(sync_results['errors'])} errors")
+        
+        # Start background tasks
+        bot.loop.create_task(background_maintenance())
+            
     except Exception as e:
-        logger.error(f"Error cleaning up temp files: {e}")
+        logger.error(f"❌ Failed to sync commands: {e}")
+
 
 @bot.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    """Handle application command errors"""
     logger.error(f"Command error: {error}")
     
     if isinstance(error, app_commands.errors.MissingRole):
@@ -221,7 +235,9 @@ async def on_app_command_error(interaction: discord.Interaction, error: app_comm
             ephemeral=True
         )
 
+
 async def main():
+    """Main bot startup function"""
     # Register application commands
     try:
         setup_submit_command(bot)
@@ -232,15 +248,15 @@ async def main():
         setup_teams_consolidated_command(bot)
         setup_stats_command(bot)
         setup_leaderboard_commands(bot)
-        # setup_shop_commands(bot)
+        # setup_shop_commands(bot)  # Temporarily disabled
         setup_monitor_command(bot)
-
         
         logger.info("✅ Application commands registered successfully")
     except Exception as e:
         logger.error(f"❌ Failed to register application commands: {e}")
 
-    await bot.start(config.TOKEN)
+    await bot.start(TOKEN)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

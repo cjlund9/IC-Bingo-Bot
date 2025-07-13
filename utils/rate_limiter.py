@@ -1,3 +1,8 @@
+"""
+Rate limiting utilities for Discord commands
+Provides decorators and functions for managing command cooldowns and usage limits
+"""
+
 import time
 import functools
 from collections import defaultdict
@@ -11,6 +16,7 @@ logger = logging.getLogger(__name__)
 # Global rate limiting storage
 command_cooldowns = defaultdict(lambda: defaultdict(float))
 user_command_counts = defaultdict(lambda: defaultdict(list))
+
 
 def rate_limit(cooldown_seconds: float = 3.0, max_requests_per_hour: int = 100):
     """
@@ -70,6 +76,7 @@ def rate_limit(cooldown_seconds: float = 3.0, max_requests_per_hour: int = 100):
         return wrapper
     return decorator
 
+
 def check_rate_limit(user_id: int, command_name: str, cooldown_seconds: float = 3.0) -> bool:
     """
     Synchronous rate limit check for use in tests or non-Discord contexts.
@@ -81,6 +88,7 @@ def check_rate_limit(user_id: int, command_name: str, cooldown_seconds: float = 
         return False
     command_cooldowns[command_name][user_id] = current_time
     return True
+
 
 def cleanup_old_rate_limits():
     """Clean up old rate limiting data to prevent memory leaks"""
@@ -112,6 +120,7 @@ def cleanup_old_rate_limits():
         # Remove empty command entries
         if not user_command_counts[command_name]:
             del user_command_counts[command_name]
+
 
 def get_rate_limit_stats() -> dict:
     """Get statistics about rate limiting usage"""
