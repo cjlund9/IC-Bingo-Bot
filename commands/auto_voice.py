@@ -90,31 +90,6 @@ class AutoVoice(commands.Cog):
             "Click a button to create a temporary voice channel:", view=view, ephemeral=True
         )
 
-    async def cog_load(self):
-        self.bot.add_view(VoiceChannelMenu(self))
-        # On cog load, post the menu in join-to-create if not already present
-        for guild in self.bot.guilds:
-            text_channel = discord.utils.get(guild.text_channels, name=JOIN_TO_CREATE_TEXT)
-            if not text_channel:
-                # Create the channel if it doesn't exist
-                overwrites = {
-                    guild.default_role: discord.PermissionOverwrite(read_messages=True, send_messages=True)
-                }
-                text_channel = await guild.create_text_channel(JOIN_TO_CREATE_TEXT, overwrites=overwrites)
-            # Check if menu already exists
-            menu_message_id = self.settings.get('menu_message_id')
-            menu_message = None
-            if menu_message_id:
-                try:
-                    menu_message = await text_channel.fetch_message(menu_message_id)
-                except Exception:
-                    menu_message = None
-            if not menu_message:
-                view = VoiceChannelMenu(self)
-                msg = await text_channel.send("Click a button to create a temporary voice channel:", view=view)
-                self.settings['menu_message_id'] = msg.id
-                save_settings(self.settings)
-
     @commands.command(name='set_temp_voice')
     @commands.has_permissions(administrator=True)
     async def set_temp_voice(self, ctx, trigger: str = None, category: discord.CategoryChannel = None, name_pattern: str = None):
@@ -126,7 +101,7 @@ class AutoVoice(commands.Cog):
         if name_pattern:
             self.settings['name_pattern'] = name_pattern
         save_settings(self.settings)
-        await ctx.send(f"Temp voice settings updated. Use /show_temp_voice_settings to view.")
+        await ctx.send(f"Temp voice settings updated. Use !show_temp_voice_settings to view.")
 
     @commands.command(name='show_temp_voice_settings')
     async def show_temp_voice_settings(self, ctx):
@@ -137,10 +112,6 @@ class AutoVoice(commands.Cog):
         category = discord.utils.get(ctx.guild.categories, id=cat_id) if cat_id else None
         msg = f"Trigger channel: {trigger}\nCategory: {category.name if category else 'Default'}\nName pattern: {name_pattern}"
         await ctx.send(msg)
-
-    async def setup(self, bot):
-        await bot.add_cog(self)
-        await self.cog_load()
 
 def setup(bot):
     bot.add_cog(AutoVoice(bot)) 
