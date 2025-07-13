@@ -297,6 +297,129 @@ def setup_leaderboard_commands(bot: Bot):
             logger.error(f"Error in icpoints command: {e}")
             await interaction.followup.send("❌ An error occurred while processing submission.")
     
+    @bot.tree.command(
+        name="event_penalty",
+        description="Apply buy-in penalty to non-participants (Leadership/Event Coordinator only)",
+        guild=discord.Object(id=GUILD_ID)
+    )
+    @app_commands.check(leadership_or_event_coordinator_check)
+    @app_commands.describe(
+        event_name="Name of the event",
+        penalty_amount="Number of points to deduct (negative number)",
+        participants_role="Role containing event participants (optional)",
+        non_participants="Users who didn't participate (optional)"
+    )
+    async def event_penalty_cmd(interaction: Interaction, event_name: str, penalty_amount: int, participants_role: discord.Role = None, non_participants: str = None):
+        await interaction.response.defer()
+        
+        try:
+            # Validate penalty amount (should be negative)
+            if penalty_amount >= 0:
+                await interaction.followup.send("❌ Penalty amount must be negative (e.g., -10 for 10 point penalty).")
+                return
+            
+            # Get all team members (Moles and Obor roles)
+            moles_role = discord.utils.get(interaction.guild.roles, name="Moles")
+            obor_role = discord.utils.get(interaction.guild.roles, name="Obor")
+            
+            if not moles_role or not obor_role:
+                await interaction.followup.send("❌ Moles and Obor roles not found. Please ensure these roles exist.")
+                return
+            
+            all_team_members = set(moles_role.members + obor_role.members)
+            
+            # Determine who gets penalized
+            penalized_members = []
+            
+            if participants_role:
+                # Penalize all team members who are NOT in the participants role
+                participants = set(participants_role.members)
+                penalized_members = [member for member in all_team_members if member not in participants]
+            elif non_participants:
+                # Parse comma-separated list of usernames/mentions
+                non_participant_names = [name.strip() for name in non_participants.split(',')]
+                for name in non_participant_names:
+                    # Try to find member by name or mention
+                    member = None
+                    if name.startswith('<@') and name.endswith('>'):
+                        # It's a mention
+                        user_id = int(name[2:-1].replace('!', ''))
+                        member = interaction.guild.get_member(user_id)
+                    else:
+                        # It's a username
+                        member = discord.utils.get(interaction.guild.members, name=name)
+                        if not member:
+                            member = discord.utils.get(interaction.guild.members, display_name=name)
+                    
+                    if member and member in all_team_members:
+                        penalized_members.append(member)
+                    elif member:
+                        await interaction.followup.send(f"⚠️ {member.display_name} is not a team member and won't be penalized.")
+            else:
+                await interaction.followup.send("❌ Please specify either a participants role or list of non-participants.")
+                return
+            
+            if not penalized_members:
+                await interaction.followup.send("✅ No team members to penalize!")
+                return
+            
+            # Apply penalties
+            successful_penalties = 0
+            failed_penalties = 0
+            total_penalties = len(penalized_members)
+            
+            for member in penalized_members:
+                try:
+                    # Get or create user
+                    db.get_or_create_user(
+                        member.id,
+                        member.name,
+                        member.display_name
+                    )
+                    
+                    # Apply penalty
+                    success = db.update_user_points(
+                        member.id,
+                        penalty_amount,
+                        f"{event_name} - Buy-in penalty for non-participation",
+                        'penalty',
+                        awarded_by=interaction.user.id
+                    )
+                    
+                    if success:
+                        successful_penalties += 1
+                    else:
+                        failed_penalties += 1
+                        
+                except Exception as e:
+                    logger.error(f"Error applying penalty to {member.display_name}: {e}")
+                    failed_penalties += 1
+            
+            # Create response embed
+            embed = discord.Embed(
+                title="💰 Event Buy-in Penalties Applied",
+                description=f"Applied penalties for **{event_name}**",
+                color=0xFF6B6B
+            )
+            embed.add_field(name="Penalty Amount", value=f"{penalty_amount} points", inline=True)
+            embed.add_field(name="Successful Penalties", value=f"{successful_penalties}/{total_penalties}", inline=True)
+            embed.add_field(name="Failed Penalties", value=f"{failed_penalties}", inline=True)
+            embed.add_field(name="Applied By", value=interaction.user.mention, inline=True)
+            
+            # List penalized members
+            if penalized_members:
+                member_list = ", ".join([member.mention for member in penalized_members[:10]])  # Show first 10
+                if len(penalized_members) > 10:
+                    member_list += f" and {len(penalized_members) - 10} more"
+                embed.add_field(name="Penalized Members", value=member_list, inline=False)
+            
+            await interaction.followup.send(embed=embed)
+            logger.info(f"Event penalties applied: {event_name} {penalty_amount}pts to {successful_penalties} members by {interaction.user.display_name}")
+                
+        except Exception as e:
+            logger.error(f"Error in event_penalty command: {e}")
+            await interaction.followup.send("❌ An error occurred while applying penalties.")
+    
 
 
 async def award_points_to_user(interaction: Interaction, user: discord.Member, points: int, reason: str):

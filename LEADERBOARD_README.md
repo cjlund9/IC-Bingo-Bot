@@ -57,6 +57,12 @@ A comprehensive Discord bot module for managing event participation, points, lea
 - **Medium**: 25 pts
 - **Easy**: 10 pts
 
+### Event Buy-in Penalties
+- **Non-participation**: Points deducted for missing events
+- **Team-based**: Only applies to Moles and Obor team members
+- **Flexible amounts**: Configurable penalty amounts per event
+- **Audit trail**: All penalties logged with reason and admin
+
 ## 🛠️ Setup
 
 ### 1. Database Initialization
@@ -82,6 +88,7 @@ The leaderboard system is integrated into the existing IC Bingo Bot. No addition
 ### Admin Commands
 - `/award_points <points> <reason> [user] [role]` - Award points to a user or all users with a role
 - `/icpoints <user> <type> <count/tier> [notes]` - Submit collection log or combat achievement points
+- `/event_penalty <event_name> <penalty_amount> [participants_role] [non_participants]` - Apply buy-in penalty to non-participants
 - `/add_shop_item <name> <description> <cost> [category] [quantity]` - Add shop item
 - `/remove_shop_item <item_id>` - Remove shop item
 
@@ -121,6 +128,12 @@ The system is designed to run alongside the existing JSON-based storage system. 
 ### Awarding Points to Role Members
 ```
 /award_points 10 "Event Participation Bonus" @role
+```
+
+### Applying Event Buy-in Penalties
+```
+/event_penalty "Skill of the Week" -10 @participants_role
+/event_penalty "Bingo Night" -5 "username1, username2, username3"
 ```
 
 ### Submitting Collection Log
