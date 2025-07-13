@@ -10,6 +10,8 @@ from commands.board_cmd import setup_board_command
 from commands.progress import setup_progress_command
 from commands.manage import setup_manage_command
 from commands.sync import setup_sync_command
+from commands.auto_voice import setup as setup_auto_voice
+from commands.generate_teams import setup as setup_generate_teams
 from core.update_board import update_board_message
 from commands.board_cmd import BoardCommand
 
@@ -89,11 +91,11 @@ try:
     setup_progress_command(bot)
     setup_manage_command(bot)
     setup_sync_command(bot)
+    setup_auto_voice(bot)  # Add auto voice cog
+    setup_generate_teams(bot)  # Add team generation cog
     logger.info("✅ Commands registered successfully")
 except Exception as e:
     logger.error(f"❌ Failed to register commands: {e}")
-
-
 
 try:
     bot.run(config.TOKEN)
