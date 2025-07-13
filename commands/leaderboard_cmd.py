@@ -208,64 +208,15 @@ def setup_leaderboard_commands(bot: Bot):
             await interaction.followup.send("❌ An error occurred while awarding points.")
     
     @bot.tree.command(
-        name="submit_clog",
-        description="Submit collection log progress for points (Leadership/Event Coordinator only)",
+        name="icpoints",
+        description="Submit points for collection log or combat achievements (Leadership/Event Coordinator only)",
         guild=discord.Object(id=GUILD_ID)
     )
     @app_commands.check(leadership_or_event_coordinator_check)
-    @app_commands.describe(
-        user="User submitting CLOG progress",
-        count="Current collection log count",
-        notes="Additional notes (optional)"
-    )
-    async def submit_clog_cmd(interaction: Interaction, user: discord.Member, count: int, notes: str = None):
-        await interaction.response.defer()
-        
-        try:
-            # Get or create user
-            db.get_or_create_user(
-                user.id,
-                user.name,
-                user.display_name
-            )
-            
-            # Submit CLOG
-            success = db.submit_clog(
-                user.id,
-                count,
-                interaction.user.id,
-                notes
-            )
-            
-            if success:
-                # Get updated user info
-                user_info = db.get_user(user.id)
-                
-                embed = discord.Embed(
-                    title="📚 Collection Log Submitted",
-                    description=f"Successfully processed CLOG submission for {user.mention}",
-                    color=0x00FF00
-                )
-                embed.add_field(name="Current Count", value=str(count), inline=True)
-                embed.add_field(name="New Total Points", value=f"{user_info['total_points']} points", inline=True)
-                if notes:
-                    embed.add_field(name="Notes", value=notes, inline=False)
-                
-                await interaction.followup.send(embed=embed)
-                logger.info(f"CLOG submitted: {user.display_name} count={count} by {interaction.user.display_name}")
-            else:
-                await interaction.followup.send("❌ Failed to process CLOG submission.")
-                
-        except Exception as e:
-            logger.error(f"Error in submit_clog command: {e}")
-            await interaction.followup.send("❌ An error occurred while processing CLOG submission.")
-    
-    @bot.tree.command(
-        name="submit_ca",
-        description="Submit combat achievement tier for points (Leadership/Event Coordinator only)",
-        guild=discord.Object(id=GUILD_ID)
-    )
-    @app_commands.check(leadership_or_event_coordinator_check)
+    @app_commands.choices(type=[
+        app_commands.Choice(name="Collection Log", value="clog"),
+        app_commands.Choice(name="Combat Achievement", value="ca")
+    ])
     @app_commands.choices(tier=[
         app_commands.Choice(name="Grandmaster", value="Grandmaster"),
         app_commands.Choice(name="Master", value="Master"),
@@ -275,11 +226,13 @@ def setup_leaderboard_commands(bot: Bot):
         app_commands.Choice(name="Easy", value="Easy")
     ])
     @app_commands.describe(
-        user="User submitting CA tier",
-        tier="Combat achievement tier",
+        user="User to award points to",
+        type="Type of submission (Collection Log or Combat Achievement)",
+        count="Current collection log count (for CLOG) or leave empty (for CA)",
+        tier="Combat achievement tier (for CA) or leave empty (for CLOG)",
         notes="Additional notes (optional)"
     )
-    async def submit_ca_cmd(interaction: Interaction, user: discord.Member, tier: str, notes: str = None):
+    async def icpoints_cmd(interaction: Interaction, user: discord.Member, type: str, count: int = None, tier: str = None, notes: str = None):
         await interaction.response.defer()
         
         try:
@@ -290,36 +243,79 @@ def setup_leaderboard_commands(bot: Bot):
                 user.display_name
             )
             
-            # Submit CA
-            success = db.submit_ca(
-                user.id,
-                tier,
-                interaction.user.id,
-                notes
-            )
-            
-            if success:
-                # Get updated user info
-                user_info = db.get_user(user.id)
+            if type == "clog":
+                # Validate CLOG submission
+                if count is None:
+                    await interaction.followup.send("❌ Collection Log count is required for CLOG submissions.")
+                    return
                 
-                embed = discord.Embed(
-                    title="⚔️ Combat Achievement Submitted",
-                    description=f"Successfully processed CA submission for {user.mention}",
-                    color=0x00FF00
+                # Submit CLOG
+                success = db.submit_clog(
+                    user.id,
+                    count,
+                    interaction.user.id,
+                    notes
                 )
-                embed.add_field(name="Tier", value=tier, inline=True)
-                embed.add_field(name="New Total Points", value=f"{user_info['total_points']} points", inline=True)
-                if notes:
-                    embed.add_field(name="Notes", value=notes, inline=False)
                 
-                await interaction.followup.send(embed=embed)
-                logger.info(f"CA submitted: {user.display_name} tier={tier} by {interaction.user.display_name}")
+                if success:
+                    # Get updated user info
+                    user_info = db.get_user(user.id)
+                    
+                    embed = discord.Embed(
+                        title="📚 Collection Log Submitted",
+                        description=f"Successfully processed CLOG submission for {user.mention}",
+                        color=0x00FF00
+                    )
+                    embed.add_field(name="Current Count", value=str(count), inline=True)
+                    embed.add_field(name="New Total Points", value=f"{user_info['total_points']} points", inline=True)
+                    if notes:
+                        embed.add_field(name="Notes", value=notes, inline=False)
+                    
+                    await interaction.followup.send(embed=embed)
+                    logger.info(f"CLOG submitted: {user.display_name} count={count} by {interaction.user.display_name}")
+                else:
+                    await interaction.followup.send("❌ Failed to process CLOG submission.")
+                    
+            elif type == "ca":
+                # Validate CA submission
+                if tier is None:
+                    await interaction.followup.send("❌ Combat Achievement tier is required for CA submissions.")
+                    return
+                
+                # Submit CA
+                success = db.submit_ca(
+                    user.id,
+                    tier,
+                    interaction.user.id,
+                    notes
+                )
+                
+                if success:
+                    # Get updated user info
+                    user_info = db.get_user(user.id)
+                    
+                    embed = discord.Embed(
+                        title="⚔️ Combat Achievement Submitted",
+                        description=f"Successfully processed CA submission for {user.mention}",
+                        color=0x00FF00
+                    )
+                    embed.add_field(name="Tier", value=tier, inline=True)
+                    embed.add_field(name="New Total Points", value=f"{user_info['total_points']} points", inline=True)
+                    if notes:
+                        embed.add_field(name="Notes", value=notes, inline=False)
+                    
+                    await interaction.followup.send(embed=embed)
+                    logger.info(f"CA submitted: {user.display_name} tier={tier} by {interaction.user.display_name}")
+                else:
+                    await interaction.followup.send("❌ Failed to process CA submission.")
             else:
-                await interaction.followup.send("❌ Failed to process CA submission.")
+                await interaction.followup.send("❌ Invalid submission type. Please choose Collection Log or Combat Achievement.")
                 
         except Exception as e:
-            logger.error(f"Error in submit_ca command: {e}")
-            await interaction.followup.send("❌ An error occurred while processing CA submission.")
+            logger.error(f"Error in icpoints command: {e}")
+            await interaction.followup.send("❌ An error occurred while processing submission.")
+    
+
 
 def _get_ordinal_suffix(n: int) -> str:
     """Get ordinal suffix for numbers (1st, 2nd, 3rd, etc.)"""

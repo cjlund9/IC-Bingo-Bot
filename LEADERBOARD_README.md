@@ -81,8 +81,7 @@ The leaderboard system is integrated into the existing IC Bingo Bot. No addition
 
 ### Admin Commands
 - `/award_points <user> <points> <reason>` - Award points to a user
-- `/submit_clog <user> <count> [notes]` - Submit collection log progress
-- `/submit_ca <user> <tier> [notes]` - Submit combat achievement tier
+- `/icpoints <user> <type> <count/tier> [notes]` - Submit collection log or combat achievement points
 - `/add_shop_item <name> <description> <cost> [category] [quantity]` - Add shop item
 - `/remove_shop_item <item_id>` - Remove shop item
 
@@ -121,7 +120,7 @@ The system is designed to run alongside the existing JSON-based storage system. 
 
 ### Submitting Collection Log
 ```
-/submit_clog @user 1200 "Reached Dragon tier"
+/icpoints @user "Collection Log" 1200 "Reached Dragon tier"
 ```
 
 ### Adding Shop Item
