@@ -41,11 +41,15 @@ def rate_limit(cooldown_seconds: float = 3.0, max_requests_per_hour: int = 100):
             hour_ago = current_time - 3600
             user_counts = user_command_counts[command_name]
             
-            # Clean old entries
-            user_counts[user_id] = sum(1 for timestamp in user_counts.get(user_id, []) 
-                                     if timestamp > hour_ago)
+            # Clean old entries and count valid ones
+            if user_id not in user_counts:
+                user_counts[user_id] = []
             
-            if user_counts[user_id] >= max_requests_per_hour:
+            # Filter out old timestamps and count remaining ones
+            valid_timestamps = [ts for ts in user_counts[user_id] if ts > hour_ago]
+            user_counts[user_id] = valid_timestamps
+            
+            if len(user_counts[user_id]) >= max_requests_per_hour:
                 await interaction.response.send_message(
                     f"⏰ You've used this command too many times in the last hour. Please wait before trying again.",
                     ephemeral=True
@@ -54,12 +58,7 @@ def rate_limit(cooldown_seconds: float = 3.0, max_requests_per_hour: int = 100):
             
             # Update usage tracking
             command_cooldowns[command_name][user_id] = current_time
-            if user_id not in user_counts:
-                user_counts[user_id] = []
             user_counts[user_id].append(current_time)
-            
-            # Clean up old timestamps
-            user_counts[user_id] = [ts for ts in user_counts[user_id] if ts > hour_ago]
             
             # Execute the command
             try:
