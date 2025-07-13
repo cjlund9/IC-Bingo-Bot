@@ -1,7 +1,12 @@
 import discord
 import os
+import time
+import logging
 from discord import app_commands, Interaction
 from discord.ext.commands import Bot
+from utils.rate_limiter import rate_limit
+
+logger = logging.getLogger(__name__)
 
 from config import GUILD_ID, TEAM_ROLES, DEFAULT_TEAM, BOARD_CHANNEL_NAME, ADMIN_ROLE
 from storage import get_completed
@@ -15,7 +20,10 @@ def setup_board_command(bot: Bot):
     )
     @app_commands.check(leadership_or_event_coordinator_check)
     @app_commands.describe(team="Team to display board for (optional, leadership/event coordinator only)")
+    @rate_limit(cooldown_seconds=10.0, max_requests_per_hour=30)  # Rate limit board updates
     async def board_cmd(interaction: Interaction, team: str = None):
+        start_time = time.time()
+        
         # Defer the response immediately to prevent timeout
         await interaction.response.defer(ephemeral=False)
         
@@ -38,10 +46,15 @@ def setup_board_command(bot: Bot):
             if success and os.path.exists(OUTPUT_FILE):
                 file = discord.File(OUTPUT_FILE)
                 await interaction.followup.send(file=file)
+                
+                # Log performance
+                execution_time = time.time() - start_time
+                logger.info(f"Board command completed in {execution_time:.3f}s for team {team}")
             else:
                 await interaction.followup.send("❌ Failed to generate board image.", ephemeral=True)
                 
         except Exception as e:
+            logger.error(f"Error displaying board: {e}")
             await interaction.followup.send(f"❌ Error generating board: {str(e)}", ephemeral=True)
 
 async def update_board_message(guild: discord.Guild, bot_user: discord.User, team: str = DEFAULT_TEAM):

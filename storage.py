@@ -1,8 +1,14 @@
 import json
 import os
 import logging
+import time
 from typing import Dict, Any, Optional, List
 from config import COMPLETED_FILE
+
+# Memory optimization: cache for frequently accessed data
+_cache = {}
+_cache_timestamps = {}
+_CACHE_TTL = 300  # 5 minutes cache TTL
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +35,7 @@ def load_completed_data() -> Dict[str, Any]:
     return completed_dict
 
 def save_completed() -> bool:
-    """Save completed data to file with error handling"""
+    """Save completed data to file with error handling and cache invalidation"""
     try:
         # Create backup of existing file
         if os.path.exists(COMPLETED_FILE):
@@ -40,6 +46,11 @@ def save_completed() -> bool:
         with open(COMPLETED_FILE, "w", encoding="utf-8") as f:
             json.dump(completed_dict, f, indent=2, ensure_ascii=False)
         logger.info(f"Saved completed data to {COMPLETED_FILE}")
+        
+        # Invalidate cache after save
+        _cache.clear()
+        _cache_timestamps.clear()
+        
         return True
     except Exception as e:
         logger.error(f"Error saving completed data: {e}")
@@ -54,10 +65,45 @@ def save_completed() -> bool:
         return False
 
 def get_completed() -> Dict[str, Any]:
-    """Get completed data, loading if necessary"""
+    """Get completed data, loading if necessary with caching"""
+    global completed_dict
+    
+    # Check cache first
+    cache_key = "completed_data"
+    current_time = time.time()
+    
+    if (cache_key in _cache and 
+        cache_key in _cache_timestamps and 
+        current_time - _cache_timestamps[cache_key] < _CACHE_TTL):
+        return _cache[cache_key]
+    
+    # Load from memory or file
     if not completed_dict:
         load_completed_data()
+    
+    # Update cache
+    _cache[cache_key] = completed_dict.copy()
+    _cache_timestamps[cache_key] = current_time
+    
     return completed_dict
+
+def cleanup_cache():
+    """Clean up expired cache entries to prevent memory leaks"""
+    current_time = time.time()
+    expired_keys = []
+    
+    for key, timestamp in _cache_timestamps.items():
+        if current_time - timestamp > _CACHE_TTL:
+            expired_keys.append(key)
+    
+    for key in expired_keys:
+        if key in _cache:
+            del _cache[key]
+        if key in _cache_timestamps:
+            del _cache_timestamps[key]
+    
+    if expired_keys:
+        logger.debug(f"Cleaned up {len(expired_keys)} expired cache entries")
 
 def validate_team(team: str) -> bool:
     """Validate team name"""

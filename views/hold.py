@@ -30,21 +30,27 @@ class HoldReviewView(View):
 
     @discord.ui.button(label="✅ Approve (Leadership only)", style=discord.ButtonStyle.success)
     async def approve(self, interaction: Interaction, button: Button):
+        import logging
+        logger = logging.getLogger(__name__)
         if not self.is_admin(interaction):
             await interaction.response.send_message("❌ Only leadership can approve submissions from hold.", ephemeral=True)
             return
 
-        # Use the new storage system
         from storage import mark_tile_submission
         success = mark_tile_submission(self.team, self.tile_index, self.submitter.id, self.drop, quantity=1)
         
         if success:
-            from config import load_placeholders
-            placeholders = load_placeholders()
-            from storage import get_completed
-            completed_dict = get_completed()
-            board.generate_board_image(placeholders, completed_dict, team=self.team)
-            await update_board_message(interaction.guild, interaction.guild.me, team=self.team)
+            try:
+                from config import load_placeholders
+                placeholders = load_placeholders()
+                from storage import get_completed
+                completed_dict = get_completed()
+                board.generate_board_image(placeholders, completed_dict, team=self.team)
+                logger.info(f"Board image regenerated for team: {self.team}")
+                await update_board_message(interaction.guild, interaction.guild.me, team=self.team)
+                logger.info(f"Board message updated for team: {self.team}")
+            except Exception as e:
+                logger.error(f"Error updating board after hold approval: {e}")
 
         from config import load_placeholders
         placeholders = load_placeholders()
@@ -72,7 +78,7 @@ class HoldReviewView(View):
             ),
             view=None
         )
-        await interaction.response.send_message("Submission approved and sent back to original submissions channel!", ephemeral=True)
+        await interaction.response.send_message("Submission approved, board updated, and sent back to original submissions channel!", ephemeral=True)
 
     @discord.ui.button(label="❌ Deny (Leadership only)", style=discord.ButtonStyle.danger)
     async def deny(self, interaction: Interaction, button: Button):

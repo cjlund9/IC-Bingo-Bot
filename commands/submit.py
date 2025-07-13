@@ -2,7 +2,10 @@ import discord
 from discord import app_commands, Interaction
 from discord.ext.commands import Bot
 import logging
+import time
+import asyncio
 from utils.access import team_member_access_check
+from utils.rate_limiter import rate_limit
 
 import config
 from storage import mark_tile_submission
@@ -62,45 +65,69 @@ def setup_submit_command(bot: Bot):
         attachment="Upload screenshot"
     )
     @app_commands.autocomplete(tile=tile_autocomplete, item=item_autocomplete)
+    @rate_limit(cooldown_seconds=5.0, max_requests_per_hour=50)  # Rate limit submissions
     async def submit(interaction: Interaction, tile: str, item: str, attachment: discord.Attachment):
+        start_time = time.time()
         member = interaction.user
 
-        # ✅ Defer immediately to avoid "Unknown Interaction" errors
-        await interaction.response.defer(ephemeral=True)
-
-        if not attachment:
-            await interaction.followup.send("❌ You must upload a screenshot.", ephemeral=True)
-            return
-
         try:
-            tile_index = int(tile)
-            placeholders = config.load_placeholders()
-            tile_data = placeholders[tile_index]
-        except (ValueError, IndexError):
-            await interaction.followup.send("❌ Invalid tile selection.", ephemeral=True)
-            return
+            # ✅ Defer immediately to avoid "Unknown Interaction" errors
+            await interaction.response.defer(ephemeral=True)
 
-        tile_name = tile_data["name"]
-        team = get_user_team(member)
+            if not attachment:
+                await interaction.followup.send("❌ You must upload a screenshot.", ephemeral=True)
+                return
 
-        review_channel = discord.utils.get(interaction.guild.text_channels, name=config.REVIEW_CHANNEL_NAME)
-        if not review_channel:
-            await interaction.followup.send(
-                f"❌ Review channel #{config.REVIEW_CHANNEL_NAME} not found.",
-                ephemeral=True
+            # Validate file size (max 25MB)
+            if attachment.size > 25 * 1024 * 1024:
+                await interaction.followup.send("❌ File too large. Please upload a smaller screenshot (max 25MB).", ephemeral=True)
+                return
+
+            try:
+                tile_index = int(tile)
+                placeholders = config.load_placeholders()
+                tile_data = placeholders[tile_index]
+            except (ValueError, IndexError):
+                await interaction.followup.send("❌ Invalid tile selection.", ephemeral=True)
+                return
+
+            tile_name = tile_data["name"]
+            team = get_user_team(member)
+
+            review_channel = discord.utils.get(interaction.guild.text_channels, name=config.REVIEW_CHANNEL_NAME)
+            if not review_channel:
+                await interaction.followup.send(
+                    f"❌ Review channel #{config.REVIEW_CHANNEL_NAME} not found.",
+                    ephemeral=True
+                )
+                return
+
+            # Convert attachment to file with timeout
+            try:
+                file = await asyncio.wait_for(attachment.to_file(), timeout=30.0)
+            except asyncio.TimeoutError:
+                await interaction.followup.send("❌ Failed to process attachment. Please try again.", ephemeral=True)
+                return
+
+            view = ApprovalView(member, tile_index, team, drop=item)
+
+            await review_channel.send(
+                content=(
+                    f"📥 Submission from {member.mention} for **{tile_name}** (Team: {team})\n"
+                    f"Drop: **{item}**"
+                ),
+                file=file,
+                view=view
             )
-            return
 
-        file = await attachment.to_file()
-        view = ApprovalView(member, tile_index, team, drop=item)
-
-        await review_channel.send(
-            content=(
-                f"📥 Submission from {member.mention} for **{tile_name}** (Team: {team})\n"
-                f"Drop: **{item}**"
-            ),
-            file=file,
-            view=view
-        )
-
-        await interaction.followup.send("✅ Submission sent for review!", ephemeral=True)
+            await interaction.followup.send("✅ Submission sent for review!", ephemeral=True)
+            
+            # Log performance
+            execution_time = time.time() - start_time
+            logger.info(f"Submit command completed in {execution_time:.3f}s for user {member.id}")
+        except Exception as e:
+            logger.error(f"Error in submit command: {e}")
+            try:
+                await interaction.followup.send("❌ An error occurred while processing your submission. Please try again.", ephemeral=True)
+            except:
+                pass  # Interaction might already be responded to

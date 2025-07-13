@@ -5,6 +5,10 @@ from dotenv import load_dotenv
 from discord import app_commands
 import logging
 import config
+import psutil
+import asyncio
+import time
+from collections import defaultdict
 from commands.submit import setup_submit_command
 from commands.board_cmd import setup_board_command
 from commands.progress import setup_progress_command
@@ -14,9 +18,9 @@ from commands.teams_consolidated import setup_teams_consolidated_command
 from commands.stats import setup_stats_command
 from commands.leaderboard_cmd import setup_leaderboard_commands
 from commands.shop_cmd import setup_shop_commands
+from commands.monitor import setup_monitor_command
 
 from core.update_board import update_board_message
-import asyncio
 
 # Load environment variables from .env
 load_dotenv()
@@ -30,21 +34,82 @@ intents.guilds = True
 intents.voice_states = True
 intents.message_content = True
 
-# Configure logging
+# Configure logging with rotation to prevent large log files
+import logging.handlers
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('bot.log'),
+        logging.handlers.RotatingFileHandler(
+            'bot.log', 
+            maxBytes=10*1024*1024,  # 10MB max file size
+            backupCount=5  # Keep 5 backup files
+        ),
         logging.StreamHandler()
     ]
 )
 logger = logging.getLogger(__name__)
 
+# Performance monitoring
+class PerformanceMonitor:
+    def __init__(self):
+        self.command_times = defaultdict(list)
+        self.memory_usage = []
+        self.start_time = time.time()
+    
+    def log_command_time(self, command_name: str, execution_time: float):
+        """Log command execution time for performance monitoring"""
+        self.command_times[command_name].append(execution_time)
+        # Keep only last 100 entries per command
+        if len(self.command_times[command_name]) > 100:
+            self.command_times[command_name] = self.command_times[command_name][-100:]
+    
+    def get_memory_usage(self) -> dict:
+        """Get current memory usage statistics"""
+        process = psutil.Process()
+        memory_info = process.memory_info()
+        return {
+            'rss_mb': memory_info.rss / 1024 / 1024,  # Resident Set Size in MB
+            'vms_mb': memory_info.vms / 1024 / 1024,  # Virtual Memory Size in MB
+            'percent': process.memory_percent()
+        }
+    
+    def log_memory_usage(self):
+        """Log current memory usage"""
+        memory_stats = self.get_memory_usage()
+        self.memory_usage.append(memory_stats)
+        # Keep only last 1000 entries
+        if len(self.memory_usage) > 1000:
+            self.memory_usage = self.memory_usage[-1000:]
+        
+        # Log if memory usage is high
+        if memory_stats['rss_mb'] > 500:  # 500MB threshold
+            logger.warning(f"High memory usage: {memory_stats['rss_mb']:.1f}MB ({memory_stats['percent']:.1f}%)")
+    
+    def get_performance_stats(self) -> dict:
+        """Get performance statistics"""
+        stats = {}
+        for command, times in self.command_times.items():
+            if times:
+                stats[command] = {
+                    'avg_time': sum(times) / len(times),
+                    'max_time': max(times),
+                    'min_time': min(times),
+                    'count': len(times)
+                }
+        return stats
+
+# Global performance monitor
+performance_monitor = PerformanceMonitor()
+
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # Store leadership role in bot config for cogs to use
 bot.leadership_role = LEADERSHIP_ROLE
+
+# Import rate limiting utilities
+from utils.rate_limiter import cleanup_old_rate_limits, get_rate_limit_stats
+from storage import cleanup_cache
 
 @bot.event
 async def on_ready():
@@ -69,9 +134,70 @@ async def on_ready():
             logger.info(f"🔄 Auto-sync completed: {sync_results['updated_tiles']} tiles updated")
         if sync_results.get("errors"):
             logger.warning(f"⚠️ Auto-sync errors: {len(sync_results['errors'])} errors")
+        
+        # Start background tasks
+        bot.loop.create_task(background_maintenance())
             
     except Exception as e:
         logger.error(f"❌ Failed to sync commands: {e}")
+
+async def background_maintenance():
+    """Background task for maintenance operations"""
+    while True:
+        try:
+            # Clean up old rate limits
+            cleanup_old_rate_limits()
+            
+            # Clean up expired cache entries
+            cleanup_cache()
+            
+            # Log memory usage every 5 minutes
+            performance_monitor.log_memory_usage()
+            
+            # Clean up temporary files
+            cleanup_temp_files()
+            
+            # Log performance stats every 10 minutes
+            if int(time.time()) % 600 < 30:  # Every 10 minutes
+                stats = performance_monitor.get_performance_stats()
+                if stats:
+                    logger.info(f"Performance stats: {len(stats)} commands tracked")
+                    for cmd, cmd_stats in stats.items():
+                        if cmd_stats['count'] > 10:  # Only log if we have enough data
+                            logger.info(f"  {cmd}: avg={cmd_stats['avg_time']:.3f}s, max={cmd_stats['max_time']:.3f}s, count={cmd_stats['count']}")
+            
+            await asyncio.sleep(300)  # Run every 5 minutes
+            
+        except Exception as e:
+            logger.error(f"Error in background maintenance: {e}")
+            await asyncio.sleep(300)
+
+def cleanup_temp_files():
+    """Clean up temporary files to prevent disk space issues"""
+    import glob
+    import os
+    
+    try:
+        # Clean up temporary board files older than 1 hour
+        current_time = time.time()
+        temp_patterns = [
+            "board_*.png",
+            "bingo_board_*.png",
+            "temp_*.png"
+        ]
+        
+        for pattern in temp_patterns:
+            for file_path in glob.glob(pattern):
+                try:
+                    file_age = current_time - os.path.getmtime(file_path)
+                    if file_age > 3600:  # 1 hour
+                        os.remove(file_path)
+                        logger.debug(f"Cleaned up temp file: {file_path}")
+                except OSError:
+                    pass  # File might be in use or already deleted
+                    
+    except Exception as e:
+        logger.error(f"Error cleaning up temp files: {e}")
 
 @bot.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
@@ -107,6 +233,7 @@ async def main():
         setup_stats_command(bot)
         setup_leaderboard_commands(bot)
         setup_shop_commands(bot)
+        setup_monitor_command(bot)
 
         
         logger.info("✅ Application commands registered successfully")
