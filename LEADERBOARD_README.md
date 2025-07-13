@@ -81,16 +81,16 @@ The leaderboard system is integrated into the existing IC Bingo Bot. No addition
 ### User Commands
 - `/iceventleaderboard [limit]` - View the current leaderboard
 - `/mystats` - View your personal statistics and history
-- `/shop` - Browse the points shop
-- `/buy <item_id> [quantity]` - Purchase items from the shop
-- `/my_points` - Check your current points balance
+- `/shop view` - Browse the points shop
+- `/shop buy <item_id> [quantity]` - Purchase items from the shop
+- `/shop balance` - Check your current points balance
 
 ### Admin Commands
 - `/award_points <points> <reason> [user] [role]` - Award points to a user or all users with a role
 - `/icpoints <user> <type> <count/tier> [notes]` - Submit collection log or combat achievement points
 - `/event_penalty <event_name> <penalty_amount> [participants_role] [non_participants]` - Apply buy-in penalty to non-participants
-- `/add_shop_item <name> <description> <cost> [category] [quantity]` - Add shop item
-- `/remove_shop_item <item_id>` - Remove shop item
+- `/shop add <name> <description> <cost> [category] [quantity]` - Add shop item
+- `/shop remove <item_id>` - Remove shop item
 
 ## 🗄️ Database Schema
 
