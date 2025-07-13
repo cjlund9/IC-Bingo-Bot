@@ -25,12 +25,13 @@ class HoldReviewView(View):
         self.drop = drop  # 🧠 Store the drop item
 
     def is_admin(self, interaction: Interaction) -> bool:
+        """Only leadership can handle hold submissions"""
         return ADMIN_ROLE in [role.name for role in interaction.user.roles]
 
-    @discord.ui.button(label="✅ Approve (Admin only)", style=discord.ButtonStyle.success)
+    @discord.ui.button(label="✅ Approve (Leadership only)", style=discord.ButtonStyle.success)
     async def approve(self, interaction: Interaction, button: Button):
         if not self.is_admin(interaction):
-            await interaction.response.send_message("❌ Only admins can approve submissions from hold.", ephemeral=True)
+            await interaction.response.send_message("❌ Only leadership can approve submissions from hold.", ephemeral=True)
             return
 
         # Use the new storage system
@@ -73,10 +74,10 @@ class HoldReviewView(View):
         )
         await interaction.response.send_message("Submission approved and sent back to original submissions channel!", ephemeral=True)
 
-    @discord.ui.button(label="❌ Deny (Admin only)", style=discord.ButtonStyle.danger)
+    @discord.ui.button(label="❌ Deny (Leadership only)", style=discord.ButtonStyle.danger)
     async def deny(self, interaction: Interaction, button: Button):
         if not self.is_admin(interaction):
-            await interaction.response.send_message("❌ Only admins can deny submissions from hold.", ephemeral=True)
+            await interaction.response.send_message("❌ Only leadership can deny submissions from hold.", ephemeral=True)
             return
 
         # Pass `drop` here to match updated DenyReasonModal constructor

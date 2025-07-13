@@ -23,7 +23,7 @@ class ApprovalView(View):
     @discord.ui.button(label="✅ Accept", style=discord.ButtonStyle.success)
     async def accept(self, interaction: Interaction, button: Button):
         if not await self.interaction_allowed(interaction):
-            await interaction.response.send_message("❌ You don't have permission to accept.", ephemeral=True)
+            await interaction.response.send_message("❌ Only leadership or event coordinators can accept submissions.", ephemeral=True)
             return
 
         await interaction.response.defer(ephemeral=True)
@@ -53,7 +53,7 @@ class ApprovalView(View):
     @discord.ui.button(label="❌ Deny", style=discord.ButtonStyle.danger)
     async def deny(self, interaction: Interaction, button: Button):
         if not await self.interaction_allowed(interaction):
-            await interaction.response.send_message("❌ You don't have permission to deny.", ephemeral=True)
+            await interaction.response.send_message("❌ Only leadership or event coordinators can deny submissions.", ephemeral=True)
             return
 
         await interaction.response.defer(ephemeral=True)
@@ -71,7 +71,7 @@ class ApprovalView(View):
     @discord.ui.button(label="⏸️ Hold", style=discord.ButtonStyle.secondary)
     async def hold(self, interaction: Interaction, button: Button):
         if not await self.interaction_allowed(interaction):
-            await interaction.response.send_message("❌ You don't have permission to hold submissions.", ephemeral=True)
+            await interaction.response.send_message("❌ Only leadership or event coordinators can hold submissions.", ephemeral=True)
             return
 
         await interaction.response.defer(ephemeral=True)

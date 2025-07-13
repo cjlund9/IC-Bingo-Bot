@@ -7,6 +7,7 @@ from typing import Optional
 from config import GUILD_ID, TEAM_ROLES, DEFAULT_TEAM, ADMIN_ROLE
 from storage import get_tile_progress, get_team_progress, get_completed
 from utils import get_user_team
+from utils.access import team_member_access_check
 
 logger = logging.getLogger(__name__)
 
@@ -146,6 +147,7 @@ def setup_progress_command(bot: Bot):
         description="View progress for a team or specific tile",
         guild=discord.Object(id=GUILD_ID)
     )
+    @app_commands.check(team_member_access_check)
     @app_commands.describe(
         team="Team to show progress for (optional, defaults to your team)",
         tile="Tile index to show specific progress (optional)"
@@ -200,6 +202,7 @@ def setup_progress_command(bot: Bot):
         description="Show team leaderboard",
         guild=discord.Object(id=GUILD_ID)
     )
+    @app_commands.check(team_member_access_check)
     async def leaderboard_cmd(interaction: Interaction):
         try:
             # Check if user has permission

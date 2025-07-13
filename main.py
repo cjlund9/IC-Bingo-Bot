@@ -10,13 +10,15 @@ from commands.board_cmd import setup_board_command
 from commands.progress import setup_progress_command
 from commands.manage import setup_manage_command
 from commands.sync import setup_sync_command
+from commands.teams import setup_teams_command
+from commands.stats import setup_stats_command
+
 from core.update_board import update_board_message
-from commands.board_cmd import BoardCommand
 import asyncio
 
 # Load environment variables from .env
 load_dotenv()
-TOKEN = os.getenv('DISCORD_TOKEN')
+TOKEN = os.getenv('DISCORD_BOT_TOKEN')
 LEADERSHIP_ROLE = os.getenv('LEADERSHIP_ROLE', 'leadership')
 
 # Enable all necessary intents
@@ -41,49 +43,6 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 # Store leadership role in bot config for cogs to use
 bot.leadership_role = LEADERSHIP_ROLE
-
-# Simple Team Commands
-@app_commands.command(name="generate_teams", description="Generate 2 balanced teams from members with the event role")
-@app_commands.checks.has_role("leadership")
-async def generate_teams(interaction: discord.Interaction):
-    await interaction.response.defer()
-    guild = interaction.guild
-    role = discord.utils.get(guild.roles, name='Summer 2025 Bingo')
-    if not role:
-        await interaction.followup.send("Role 'Summer 2025 Bingo' not found.")
-        return
-    members = [m for m in role.members if not m.bot]
-    if len(members) < 2:
-        await interaction.followup.send("Not enough participants to form teams.")
-        return
-    await interaction.followup.send(f"Fetching stats for {len(members)} participants...")
-    # ... rest of the logic would go here
-    await interaction.followup.send("Teams generated!")
-
-@app_commands.command(name="show_teams", description="Show the current teams")
-async def show_teams(interaction: discord.Interaction):
-    await interaction.response.send_message("Teams would be shown here!")
-
-@app_commands.command(name="move_player", description="Move a player to a different team")
-async def move_player(interaction: discord.Interaction, player: str, team: str):
-    await interaction.response.send_message(f"Would move {player} to {team}")
-
-@app_commands.command(name="swap_players", description="Swap two players between teams")
-async def swap_players(interaction: discord.Interaction, player1: str, player2: str):
-    await interaction.response.send_message(f"Would swap {player1} and {player2}")
-
-# Simple Voice Commands
-@app_commands.command(name="voice_channel_menu", description="Show menu to create a temp voice channel")
-async def voice_channel_menu(interaction: discord.Interaction):
-    await interaction.response.send_message("Voice channel menu would appear here!")
-
-@app_commands.command(name="set_temp_voice", description="Set temp voice channel settings")
-async def set_temp_voice(interaction: discord.Interaction, trigger: str = None):
-    await interaction.response.send_message(f"Temp voice settings updated: {trigger}")
-
-@app_commands.command(name="show_temp_voice_settings", description="Show current temp voice channel settings")
-async def show_temp_voice_settings(interaction: discord.Interaction):
-    await interaction.response.send_message("Current voice settings would be shown here!")
 
 @bot.event
 async def on_ready():
@@ -142,15 +101,9 @@ async def main():
         setup_progress_command(bot)
         setup_manage_command(bot)
         setup_sync_command(bot)
-        
-        # Register simple team and voice commands
-        bot.tree.add_command(generate_teams)
-        bot.tree.add_command(show_teams)
-        bot.tree.add_command(move_player)
-        bot.tree.add_command(swap_players)
-        bot.tree.add_command(voice_channel_menu)
-        bot.tree.add_command(set_temp_voice)
-        bot.tree.add_command(show_temp_voice_settings)
+        setup_teams_command(bot)
+        setup_stats_command(bot)
+
         
         logger.info("✅ Application commands registered successfully")
     except Exception as e:

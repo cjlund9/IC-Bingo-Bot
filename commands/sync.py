@@ -5,6 +5,7 @@ import logging
 
 from config import GUILD_ID, ADMIN_ROLE
 from storage import sync_completed_data_with_tiles
+from utils.access import bot_access_check, admin_access_check
 
 logger = logging.getLogger(__name__)
 
@@ -14,16 +15,9 @@ def setup_sync_command(bot: Bot):
         description="Sync completed.json data with current tiles.json values (Admin only)",
         guild=discord.Object(id=GUILD_ID)
     )
+    @app_commands.check(admin_access_check)
     async def sync_cmd(interaction: Interaction):
         try:
-            # Check permissions
-            roles = [r.name for r in interaction.user.roles]
-            if ADMIN_ROLE not in roles:
-                await interaction.response.send_message(
-                    "❌ Only admins can sync data.",
-                    ephemeral=True
-                )
-                return
             
             await interaction.response.defer(ephemeral=True)
             
@@ -81,16 +75,9 @@ def setup_sync_command(bot: Bot):
         description="Validate all tile data and show discrepancies (Admin only)",
         guild=discord.Object(id=GUILD_ID)
     )
+    @app_commands.check(admin_access_check)
     async def validate_cmd(interaction: Interaction):
         try:
-            # Check permissions
-            roles = [r.name for r in interaction.user.roles]
-            if ADMIN_ROLE not in roles:
-                await interaction.response.send_message(
-                    "❌ Only admins can validate data.",
-                    ephemeral=True
-                )
-                return
             
             await interaction.response.defer(ephemeral=True)
             

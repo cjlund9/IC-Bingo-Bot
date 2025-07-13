@@ -197,7 +197,8 @@ def generate_board_image(placeholders: Optional[List[Dict[str, Any]]] = None,
         # Clean up temp file
         try:
             os.remove(temp_filename)
-        except:
+        except OSError:
+            # File might not exist or be locked, which is fine
             pass
             
         logger.info(f"✅ Board image saved to {OUTPUT_FILE} for team: {team}")

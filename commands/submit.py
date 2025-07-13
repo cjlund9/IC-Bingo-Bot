@@ -1,12 +1,16 @@
 import discord
 from discord import app_commands, Interaction
 from discord.ext.commands import Bot
+import logging
+from utils.access import team_member_access_check
 
 import config
 from storage import mark_tile_submission
 from board import generate_board_image, OUTPUT_FILE
 from utils import get_user_team
 from views.approval import ApprovalView
+
+logger = logging.getLogger(__name__)
 
 # Autocomplete for tile selection
 async def tile_autocomplete(interaction: Interaction, current: str):
@@ -35,7 +39,7 @@ async def item_autocomplete(interaction: Interaction, current: str):
 
     drops = tile_data.get("drops_required", [])
     if not isinstance(drops, list):
-        print(f"DEBUG: drops_required is not a list: {drops}")
+        logger.warning(f"drops_required is not a list: {drops}")
         drops = []
 
     return [
@@ -51,6 +55,7 @@ def setup_submit_command(bot: Bot):
         description="Submit a completed bingo tile with screenshot",
         guild=discord.Object(id=config.GUILD_ID)
     )
+    @app_commands.check(team_member_access_check)
     @app_commands.describe(
         tile="Select the tile you completed",
         item="Which item did you get?",
@@ -62,14 +67,6 @@ def setup_submit_command(bot: Bot):
 
         # ✅ Defer immediately to avoid "Unknown Interaction" errors
         await interaction.response.defer(ephemeral=True)
-
-        # ✅ Check if user is on a team
-        if not any(role.name in config.TEAM_ROLES for role in member.roles):
-            await interaction.followup.send(
-                "❌ You must be assigned to a team to use this command.",
-                ephemeral=True
-            )
-            return
 
         if not attachment:
             await interaction.followup.send("❌ You must upload a screenshot.", ephemeral=True)
@@ -93,9 +90,6 @@ def setup_submit_command(bot: Bot):
                 ephemeral=True
             )
             return
-
-        # ✅ Save submission progress
-        mark_tile_submission(team, tile_index, member.id, item, quantity=1)
 
         file = await attachment.to_file()
         view = ApprovalView(member, tile_index, team, drop=item)
