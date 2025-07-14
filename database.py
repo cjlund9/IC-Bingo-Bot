@@ -42,82 +42,86 @@ class DatabaseManager:
     
     def _add_bingo_tables(self, conn):
         """Add bingo tables to existing database"""
-        bingo_schema = """
-        -- Bingo tiles table - stores tile definitions
-        CREATE TABLE bingo_tiles (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tile_index INTEGER NOT NULL, -- 0-99 for 10x10 board
-            name TEXT NOT NULL,
-            drops_needed INTEGER NOT NULL DEFAULT 1,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(tile_index)
-        );
+        try:
+            bingo_schema = """
+            -- Bingo tiles table - stores tile definitions
+            CREATE TABLE bingo_tiles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tile_index INTEGER NOT NULL, -- 0-99 for 10x10 board
+                name TEXT NOT NULL,
+                drops_needed INTEGER NOT NULL DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(tile_index)
+            );
 
-        -- Bingo tile drops table - stores required drops for each tile
-        CREATE TABLE bingo_tile_drops (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tile_id INTEGER NOT NULL,
-            drop_name TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (tile_id) REFERENCES bingo_tiles(id) ON DELETE CASCADE,
-            UNIQUE(tile_id, drop_name)
-        );
+            -- Bingo tile drops table - stores required drops for each tile
+            CREATE TABLE bingo_tile_drops (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tile_id INTEGER NOT NULL,
+                drop_name TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (tile_id) REFERENCES bingo_tiles(id) ON DELETE CASCADE,
+                UNIQUE(tile_id, drop_name)
+            );
 
-        -- Bingo team progress table - tracks team progress on tiles
-        CREATE TABLE bingo_team_progress (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            team_name TEXT NOT NULL,
-            tile_id INTEGER NOT NULL,
-            total_required INTEGER NOT NULL,
-            completed_count INTEGER NOT NULL DEFAULT 0,
-            is_complete BOOLEAN DEFAULT FALSE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (tile_id) REFERENCES bingo_tiles(id) ON DELETE CASCADE,
-            UNIQUE(team_name, tile_id)
-        );
+            -- Bingo team progress table - tracks team progress on tiles
+            CREATE TABLE bingo_team_progress (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                team_name TEXT NOT NULL,
+                tile_id INTEGER NOT NULL,
+                total_required INTEGER NOT NULL,
+                completed_count INTEGER NOT NULL DEFAULT 0,
+                is_complete BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (tile_id) REFERENCES bingo_tiles(id) ON DELETE CASCADE,
+                UNIQUE(team_name, tile_id)
+            );
 
-        -- Bingo submissions table - stores individual drop submissions
-        CREATE TABLE bingo_submissions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            team_name TEXT NOT NULL,
-            tile_id INTEGER NOT NULL,
-            user_id INTEGER NOT NULL, -- Discord user ID
-            drop_name TEXT NOT NULL,
-            quantity INTEGER NOT NULL DEFAULT 1,
-            status TEXT NOT NULL DEFAULT 'pending', -- 'pending', 'approved', 'denied', 'hold'
-            submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            approved_at TIMESTAMP,
-            approved_by INTEGER, -- Discord user ID of approver
-            denied_at TIMESTAMP,
-            denied_by INTEGER, -- Discord user ID of denier
-            denial_reason TEXT,
-            hold_at TIMESTAMP,
-            hold_by INTEGER, -- Discord user ID who put on hold
-            hold_reason TEXT,
-            FOREIGN KEY (tile_id) REFERENCES bingo_tiles(id) ON DELETE CASCADE,
-            FOREIGN KEY (user_id) REFERENCES users(discord_id),
-            FOREIGN KEY (approved_by) REFERENCES users(discord_id),
-            FOREIGN KEY (denied_by) REFERENCES users(discord_id),
-            FOREIGN KEY (hold_by) REFERENCES users(discord_id)
-        );
+            -- Bingo submissions table - stores individual drop submissions
+            CREATE TABLE bingo_submissions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                team_name TEXT NOT NULL,
+                tile_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL, -- Discord user ID
+                drop_name TEXT NOT NULL,
+                quantity INTEGER NOT NULL DEFAULT 1,
+                status TEXT NOT NULL DEFAULT 'pending', -- 'pending', 'approved', 'denied', 'hold'
+                submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                approved_at TIMESTAMP,
+                approved_by INTEGER, -- Discord user ID of approver
+                denied_at TIMESTAMP,
+                denied_by INTEGER, -- Discord user ID of denier
+                denial_reason TEXT,
+                hold_at TIMESTAMP,
+                hold_by INTEGER, -- Discord user ID who put on hold
+                hold_reason TEXT,
+                FOREIGN KEY (tile_id) REFERENCES bingo_tiles(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(discord_id),
+                FOREIGN KEY (approved_by) REFERENCES users(discord_id),
+                FOREIGN KEY (denied_by) REFERENCES users(discord_id),
+                FOREIGN KEY (hold_by) REFERENCES users(discord_id)
+            );
 
-        -- Bingo-specific indexes
-        CREATE INDEX idx_bingo_tiles_index ON bingo_tiles(tile_index);
-        CREATE INDEX idx_bingo_team_progress_team ON bingo_team_progress(team_name);
-        CREATE INDEX idx_bingo_team_progress_tile ON bingo_team_progress(tile_id);
-        CREATE INDEX idx_bingo_team_progress_complete ON bingo_team_progress(is_complete);
-        CREATE INDEX idx_bingo_submissions_team ON bingo_submissions(team_name);
-        CREATE INDEX idx_bingo_submissions_tile ON bingo_submissions(tile_id);
-        CREATE INDEX idx_bingo_submissions_user ON bingo_submissions(user_id);
-        CREATE INDEX idx_bingo_submissions_status ON bingo_submissions(status);
-        CREATE INDEX idx_bingo_submissions_submitted ON bingo_submissions(submitted_at);
-        CREATE INDEX idx_bingo_tile_drops_tile ON bingo_tile_drops(tile_id);
-        """
-        conn.executescript(bingo_schema)
-        conn.commit()
-        logger.info("Bingo tables added successfully")
+            -- Bingo-specific indexes
+            CREATE INDEX idx_bingo_tiles_index ON bingo_tiles(tile_index);
+            CREATE INDEX idx_bingo_team_progress_team ON bingo_team_progress(team_name);
+            CREATE INDEX idx_bingo_team_progress_tile ON bingo_team_progress(tile_id);
+            CREATE INDEX idx_bingo_team_progress_complete ON bingo_team_progress(is_complete);
+            CREATE INDEX idx_bingo_submissions_team ON bingo_submissions(team_name);
+            CREATE INDEX idx_bingo_submissions_tile ON bingo_submissions(tile_id);
+            CREATE INDEX idx_bingo_submissions_user ON bingo_submissions(user_id);
+            CREATE INDEX idx_bingo_submissions_status ON bingo_submissions(status);
+            CREATE INDEX idx_bingo_submissions_submitted ON bingo_submissions(submitted_at);
+            CREATE INDEX idx_bingo_tile_drops_tile ON bingo_tile_drops(tile_id);
+            """
+            conn.executescript(bingo_schema)
+            conn.commit()
+            logger.info("Bingo tables added successfully")
+        except Exception as e:
+            logger.error(f"Error adding bingo tables: {e}")
+            raise
     
     @contextmanager
     def get_connection(self):
