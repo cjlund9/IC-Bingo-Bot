@@ -18,11 +18,26 @@ logger = logging.getLogger(__name__)
 # Autocomplete for tile selection
 async def tile_autocomplete(interaction: Interaction, current: str):
     placeholders = config.load_placeholders()
-    return [
-        app_commands.Choice(name=t["name"], value=str(i))
-        for i, t in enumerate(placeholders)
-        if current.lower() in t["name"].lower()
-    ][:25]
+    choices = []
+    
+    for i, t in enumerate(placeholders):
+        # Calculate tile coordinates (A1, A2, etc.)
+        row = i // 10  # 10x10 board
+        col = i % 10
+        row_letter = chr(65 + row)  # A=65, B=66, etc.
+        col_number = col + 1  # 1-based column numbers
+        tile_indicator = f"{row_letter}{col_number}"
+        
+        # Create display name with indicator
+        display_name = f"{tile_indicator}: {t['name']}"
+        
+        # Check if current input matches either the indicator or the tile name
+        if (current.lower() in display_name.lower() or 
+            current.lower() in tile_indicator.lower() or 
+            current.lower() in t["name"].lower()):
+            choices.append(app_commands.Choice(name=display_name, value=str(i)))
+    
+    return choices[:25]
 
 # Autocomplete for drop item based on selected tile
 async def item_autocomplete(interaction: Interaction, current: str):

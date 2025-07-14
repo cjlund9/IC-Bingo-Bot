@@ -190,6 +190,24 @@ def generate_board_image(placeholders: Optional[List[Dict[str, Any]]] = None,
                 draw.text((text_x, text_y), line, font=font, fill=text_color)
                 text_y += line_height
 
+            # Draw tile indicator (e.g., "A1", "B2")
+            row_letter = chr(65 + row)  # A=65, B=66, etc.
+            col_number = col + 1  # 1-based column numbers
+            tile_indicator = f"{row_letter}{col_number}"
+            
+            # Draw tile indicator in top-left corner
+            indicator_font_size = max(8, FONT_SIZE - 4)  # Slightly smaller than main font
+            try:
+                if os.path.exists(FONT_PATH):
+                    indicator_font = ImageFont.truetype(FONT_PATH, indicator_font_size)
+                else:
+                    indicator_font = ImageFont.load_default()
+            except Exception:
+                indicator_font = ImageFont.load_default()
+            
+            indicator_width = draw.textlength(tile_indicator, font=indicator_font)
+            draw.text((x + 2, y + 2), tile_indicator, font=indicator_font, fill=text_color)
+
             # Draw progress indicator (e.g., "1/3") if needed
             if required > 1 or progress > 0:
                 progress_text = f"{progress}/{required}"

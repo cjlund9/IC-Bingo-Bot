@@ -24,6 +24,15 @@ def create_management_embed(team: str, tile_index: int) -> discord.Embed:
         return embed, None
     
     tile_name = progress.get("tile_name", f"Tile {tile_index}")
+    
+    # Add tile indicator (A1, A2, etc.)
+    row = tile_index // 10  # 10x10 board
+    col = tile_index % 10
+    row_letter = chr(65 + row)  # A=65, B=66, etc.
+    col_number = col + 1  # 1-based column numbers
+    tile_indicator = f"{row_letter}{col_number}"
+    tile_name_with_indicator = f"{tile_indicator}: {tile_name}"
+    
     completed_count = progress.get("completed_count", 0)
     total_required = progress.get("total_required", 1)
     progress_percentage = progress.get("progress_percentage", 0)
@@ -39,7 +48,7 @@ def create_management_embed(team: str, tile_index: int) -> discord.Embed:
         color = 0x808080  # Gray for not started
         
     embed = discord.Embed(
-        title=f"🔧 Manage {tile_name}",
+        title=f"🔧 Manage {tile_name_with_indicator}",
         description=f"**Team:** {team.capitalize()}",
         color=color
     )
@@ -78,7 +87,7 @@ def create_management_embed(team: str, tile_index: int) -> discord.Embed:
     # Create management view
     view = SubmissionRemovalView(team, tile_index)
     
-    embed.set_footer(text=f"Team: {team.capitalize()} | Tile: {tile_index}")
+    embed.set_footer(text=f"Team: {team.capitalize()} | Tile: {tile_indicator} ({tile_index})")
     return embed, view
 
 def setup_manage_command(bot: Bot):

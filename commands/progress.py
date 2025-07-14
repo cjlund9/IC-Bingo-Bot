@@ -26,6 +26,15 @@ def create_progress_embed(team: str, tile_index: Optional[int] = None) -> discor
             return embed
             
         tile_name = progress.get("tile_name", f"Tile {tile_index}")
+        
+        # Add tile indicator (A1, A2, etc.)
+        row = tile_index // 10  # 10x10 board
+        col = tile_index % 10
+        row_letter = chr(65 + row)  # A=65, B=66, etc.
+        col_number = col + 1  # 1-based column numbers
+        tile_indicator = f"{row_letter}{col_number}"
+        tile_name_with_indicator = f"{tile_indicator}: {tile_name}"
+        
         completed_count = progress.get("completed_count", 0)
         total_required = progress.get("total_required", 1)
         progress_percentage = progress.get("progress_percentage", 0)
@@ -41,7 +50,7 @@ def create_progress_embed(team: str, tile_index: Optional[int] = None) -> discor
             color = 0x808080  # Gray for not started
             
         embed = discord.Embed(
-            title=f"📊 {tile_name} Progress",
+            title=f"📊 {tile_name_with_indicator} Progress",
             description=f"**Team:** {team.capitalize()}",
             color=color
         )
@@ -124,9 +133,18 @@ def create_progress_embed(team: str, tile_index: Optional[int] = None) -> discor
         for tile_idx, progress in tile_progress.items():
             if progress.get("completed_count", 0) > 0 and not progress.get("is_complete", False):
                 tile_name = progress.get("tile_name", f"Tile {tile_idx}")
+                
+                # Add tile indicator (A1, A2, etc.)
+                tile_idx_int = int(tile_idx)
+                row = tile_idx_int // 10  # 10x10 board
+                col = tile_idx_int % 10
+                row_letter = chr(65 + row)  # A=65, B=66, etc.
+                col_number = col + 1  # 1-based column numbers
+                tile_indicator = f"{row_letter}{col_number}"
+                
                 completed = progress.get("completed_count", 0)
                 total = progress.get("total_required", 1)
-                in_progress_list.append(f"• {tile_name}: {completed}/{total}")
+                in_progress_list.append(f"• {tile_indicator}: {tile_name} ({completed}/{total})")
         
         if in_progress_list:
             in_progress_text = "\n".join(in_progress_list[:5])  # Show top 5
