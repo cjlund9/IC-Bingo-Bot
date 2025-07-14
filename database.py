@@ -451,6 +451,9 @@ class DatabaseManager:
                                     team_name, tile_id, submission['user_id'], 
                                     submission['drop'], submission['quantity'], datetime.now()
                                 ))
+                        except Exception as e:
+                            logger.error(f"Error processing tile {tile_key} for team {team_name}: {e}")
+                            continue
                 
                 conn.commit()
                 logger.info("Successfully migrated JSON data to database")
