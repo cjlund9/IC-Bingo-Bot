@@ -3,7 +3,7 @@ from discord import app_commands, Interaction
 from discord.ext.commands import Bot
 import logging
 from typing import Optional
-from database import db
+from database import DatabaseManager
 from config import GUILD_ID, ADMIN_ROLE, EVENT_COORDINATOR_ROLE
 from utils.access import leadership_or_event_coordinator_check
 
@@ -69,6 +69,7 @@ async def shop_view(interaction: Interaction):
     """View the shop items"""
     try:
         # Get shop items
+        db = DatabaseManager()
         items = db.get_shop_items()
         
         if not items:
@@ -118,6 +119,7 @@ async def shop_buy(interaction: Interaction, item_id: int, quantity: int):
     """Purchase an item from the shop"""
     try:
         # Get or create user
+        db = DatabaseManager()
         user = db.get_or_create_user(
             interaction.user.id,
             interaction.user.name,
@@ -154,6 +156,7 @@ async def shop_balance(interaction: Interaction):
     """Check user's points balance"""
     try:
         # Get or create user
+        db = DatabaseManager()
         user = db.get_or_create_user(
             interaction.user.id,
             interaction.user.name,
@@ -212,6 +215,7 @@ async def shop_add(interaction: Interaction, name: str, description: str, cost: 
         return
     
     try:
+        db = DatabaseManager()
         with db.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
@@ -246,6 +250,7 @@ async def shop_remove(interaction: Interaction, item_id: int):
         return
     
     try:
+        db = DatabaseManager()
         with db.get_connection() as conn:
             cursor = conn.cursor()
             

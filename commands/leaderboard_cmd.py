@@ -3,7 +3,7 @@ from discord import app_commands, Interaction
 from discord.ext.commands import Bot
 import logging
 from typing import Optional
-from database import db
+from database import DatabaseManager
 from config import GUILD_ID, ADMIN_ROLE, EVENT_COORDINATOR_ROLE
 from utils.access import leadership_or_event_coordinator_check
 
@@ -23,6 +23,7 @@ def setup_leaderboard_commands(bot: Bot):
         
         try:
             # Get leaderboard data
+            db = DatabaseManager()
             leaderboard = db.get_leaderboard(limit)
             
             if not leaderboard:
@@ -68,6 +69,7 @@ def setup_leaderboard_commands(bot: Bot):
         
         try:
             # Get or create user
+            db = DatabaseManager()
             user = db.get_or_create_user(
                 interaction.user.id,
                 interaction.user.name,
