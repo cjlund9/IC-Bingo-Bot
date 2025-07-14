@@ -23,6 +23,9 @@ dist/
 # Logs and databases
 *.log
 *.sqlite3
+database/*.db
+database/*.db.backup*
+database/*.db.local*
 
 # VSCode settings (if you use it)
 .vscode/
