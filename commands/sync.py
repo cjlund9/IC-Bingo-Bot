@@ -82,7 +82,7 @@ def setup_sync_command(bot: Bot):
             db = DatabaseManager()
             
             # Load tiles.json
-            tiles_file = "tiles.json"
+            tiles_file = "data/tiles.json"
             if not os.path.exists(tiles_file):
                 await interaction.followup.send("❌ tiles.json not found", ephemeral=True)
                 return
@@ -94,7 +94,7 @@ def setup_sync_command(bot: Bot):
             tiles_success = db.sync_bingo_tiles_from_json(tiles_data)
             
             # Load completed.json
-            completed_file = "completed.json"
+            completed_file = "data/completed.json"
             completed_data = {}
             if os.path.exists(completed_file):
                 with open(completed_file, 'r', encoding='utf-8') as f:

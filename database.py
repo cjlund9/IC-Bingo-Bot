@@ -29,7 +29,7 @@ class DatabaseManager:
                     return
             
             # Database doesn't exist, create it
-            with open('database_schema.sql', 'r') as f:
+            with open('database/database_schema.sql', 'r') as f:
                 schema = f.read()
             
             with self.get_connection() as conn:

@@ -19,7 +19,7 @@ TILE_SIZE = 80
 FONT_PATH = os.path.join(BASE_DIR, "assets", "fonts", "runescape_uf.ttf")
 FONT_SIZE = 12
 OUTPUT_FILE = os.path.join(BASE_DIR, "board.png")
-GENERATED_BOARD_PATH = os.path.join(BASE_DIR, "tiles.json")
+GENERATED_BOARD_PATH = os.path.join(BASE_DIR, "data", "tiles.json")
 
 # Colors
 COLOR_TILE = (70, 50, 20, 255)         # Original RuneScape brown

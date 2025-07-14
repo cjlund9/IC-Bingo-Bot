@@ -45,7 +45,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.handlers.RotatingFileHandler(
-            'bot.log', 
+            'logs/bot.log', 
             maxBytes=10*1024*1024,  # 10MB max file size
             backupCount=5  # Keep 5 backup files
         ),
