@@ -69,11 +69,10 @@ async def update_board_message(guild: discord.Guild, bot_user: Optional[discord.
         import shutil
         shutil.copy2(OUTPUT_FILE, temp_output_file)
         
-        # Create file object
-        file = discord.File(temp_output_file, filename=f"bingo_board_{team}_{timestamp}.png")
-        
-        # Update each channel
+        # Update each channel with a fresh file object
         for channel in channels_to_update:
+            # Create a new file object for each channel to avoid I/O closed file errors
+            file = discord.File(temp_output_file, filename=f"bingo_board_{team}_{timestamp}.png")
             await update_channel_board_message(channel, bot_user, team, file, timestamp)
 
     except Exception as e:
