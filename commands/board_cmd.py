@@ -24,38 +24,41 @@ def setup_board_command(bot: Bot):
     async def board_cmd(interaction: Interaction, team: str = None):
         start_time = time.time()
         
-        # Defer the response immediately to prevent timeout
-        await interaction.response.defer(ephemeral=False)
-        
         team = team.lower() if team else DEFAULT_TEAM
 
         if team != DEFAULT_TEAM and team.capitalize() not in TEAM_ROLES:
-            await interaction.followup.send(
+            await interaction.response.send_message(
                 f"❌ Invalid team '{team}'. Valid teams: {', '.join(TEAM_ROLES)} or 'all'.",
                 ephemeral=True
             )
             return
 
         try:
+            # 1. Send processing message immediately
+            processing_message = await interaction.response.send_message(
+                "🟫 Generating board, please wait...",
+                ephemeral=False
+            )
+
             completed_dict = get_completed()
             from board import generate_board_image, OUTPUT_FILE
             
-            # Generate the board image
+            # 2. Generate the board image
             success = generate_board_image(placeholders=None, completed_dict=completed_dict, team=team)
             
             if success and os.path.exists(OUTPUT_FILE):
                 file = discord.File(OUTPUT_FILE)
-                await interaction.followup.send(file=file)
+                # 3. Edit the original message to attach the image
+                await interaction.edit_original_response(content=None, attachments=[file])
                 
-                # Log performance
                 execution_time = time.time() - start_time
                 logger.info(f"Board command completed in {execution_time:.3f}s for team {team}")
             else:
-                await interaction.followup.send("❌ Failed to generate board image.", ephemeral=True)
+                await interaction.edit_original_response(content="❌ Failed to generate board image.")
                 
         except Exception as e:
             logger.error(f"Error displaying board: {e}")
-            await interaction.followup.send(f"❌ Error generating board: {str(e)}", ephemeral=True)
+            await interaction.edit_original_response(content=f"❌ Error generating board: {str(e)}")
 
 async def update_board_message(guild: discord.Guild, bot_user: discord.User, team: str = DEFAULT_TEAM):
     from core.update_board import update_board_message as update_board
