@@ -19,7 +19,11 @@ def setup_leaderboard_commands(bot: Bot):
     @app_commands.check(leadership_or_event_coordinator_check)
     @app_commands.describe(limit="Number of users to show (default: 20)")
     async def leaderboard_cmd(interaction: Interaction, limit: int = 20):
-        await interaction.response.defer()
+        # TEMPORARY DISABLE: See issue #disable-commands
+        await interaction.response.send_message("❌ This command is temporarily disabled.", ephemeral=True)
+        return
+        # --- To re-enable, remove the above lines and restore logic below ---
+        # await interaction.response.defer()
         
         try:
             # Get leaderboard data
@@ -169,7 +173,11 @@ def setup_leaderboard_commands(bot: Bot):
         reason="Reason for awarding points"
     )
     async def award_points_cmd(interaction: Interaction, points: int, reason: str, user: discord.Member = None, role: discord.Role = None):
-        await interaction.response.defer()
+        # TEMPORARY DISABLE: See issue #disable-commands
+        await interaction.response.send_message("❌ This command is temporarily disabled.", ephemeral=True)
+        return
+        # --- To re-enable, remove the above lines and restore logic below ---
+        # await interaction.response.defer()
         
         try:
             # Validate input - must have either user or role, not both
@@ -217,7 +225,11 @@ def setup_leaderboard_commands(bot: Bot):
         notes="Additional notes (optional)"
     )
     async def icpoints_cmd(interaction: Interaction, user: discord.Member, type: str, count: int = None, tier: str = None, notes: str = None):
-        await interaction.response.defer()
+        # TEMPORARY DISABLE: See issue #disable-commands
+        await interaction.response.send_message("❌ This command is temporarily disabled.", ephemeral=True)
+        return
+        # --- To re-enable, remove the above lines and restore logic below ---
+        # await interaction.response.defer()
         
         try:
             # Get or create user
@@ -312,7 +324,11 @@ def setup_leaderboard_commands(bot: Bot):
         non_participants="Users who didn't participate (optional)"
     )
     async def event_penalty_cmd(interaction: Interaction, event_name: str, penalty_amount: int, participants_role: discord.Role = None, non_participants: str = None):
-        await interaction.response.defer()
+        # TEMPORARY DISABLE: See issue #disable-commands
+        await interaction.response.send_message("❌ This command is temporarily disabled.", ephemeral=True)
+        return
+        # --- To re-enable, remove the above lines and restore logic below ---
+        # await interaction.response.defer()
         
         try:
             # Validate penalty amount (should be negative)
