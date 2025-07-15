@@ -256,3 +256,72 @@ def setup_sync_command(bot: Bot):
         except Exception as e:
             logger.error(f"Error in validate_db command: {e}")
             await interaction.followup.send(f"❌ Error during validation: {str(e)}", ephemeral=True) 
+
+    @bot.tree.command(
+        name="clear_progress",
+        description="Clear all bingo progress data for a fresh start (Admin only)",
+        guild=discord.Object(id=GUILD_ID)
+    )
+    @app_commands.check(admin_access_check)
+    async def clear_progress_cmd(interaction: Interaction):
+        try:
+            await interaction.response.defer(ephemeral=True)
+            
+            # Initialize database
+            db = DatabaseManager()
+            
+            # Clear database progress
+            with db.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Clear bingo submissions
+                cursor.execute("DELETE FROM bingo_submissions")
+                submissions_cleared = cursor.rowcount
+                
+                # Clear bingo team progress
+                cursor.execute("DELETE FROM bingo_team_progress")
+                progress_cleared = cursor.rowcount
+                
+                conn.commit()
+            
+            # Clear completed.json file
+            completed_file = "data/completed.json"
+            if os.path.exists(completed_file):
+                with open(completed_file, 'w', encoding='utf-8') as f:
+                    json.dump({}, f)
+            
+            # Clear storage cache
+            from storage import completed_dict
+            completed_dict.clear()
+            
+            # Create response embed
+            embed = discord.Embed(
+                title="🧹 Progress Cleared",
+                description="All bingo progress data has been cleared for a fresh start",
+                color=0x00FF00
+            )
+            
+            embed.add_field(
+                name="Database Cleared",
+                value=f"• {submissions_cleared} submissions removed\n• {progress_cleared} progress records removed",
+                inline=False
+            )
+            
+            embed.add_field(
+                name="Files Cleared",
+                value="• completed.json reset to empty\n• Storage cache cleared",
+                inline=False
+            )
+            
+            embed.add_field(
+                name="Next Steps",
+                value="1. Run `/migrate_to_db` to sync new tiles\n2. Run `/board` to generate fresh board",
+                inline=False
+            )
+            
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            logger.info(f"Progress cleared by {interaction.user.display_name}")
+            
+        except Exception as e:
+            logger.error(f"Error clearing progress: {e}")
+            await interaction.followup.send(f"❌ Error clearing progress: {str(e)}", ephemeral=True) 
