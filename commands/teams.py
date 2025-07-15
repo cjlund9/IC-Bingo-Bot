@@ -8,6 +8,7 @@ import json
 from utils.access import has_bot_access, bot_access_check, admin_access_check
 from typing import List, Dict, Any, Tuple
 from datetime import datetime, timedelta
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +97,7 @@ class TeamBalancer:
             balance_scores['ehp_diff'] <= 300      # EHP within 300
         )
     
-    def generate_balanced_teams(self) -> Tuple[List[Dict], List[Dict]]:
+    async def generate_balanced_teams(self) -> Tuple[List[Dict], List[Dict]]:
         """Generate optimally balanced teams using priority-based algorithm"""
         
         if self.n_players < 2:
@@ -105,8 +106,10 @@ class TeamBalancer:
         # Fetch stats for all players
         logger.info("Fetching player stats from WiseOldMan...")
         for player in self.players:
-            stats = self.fetch_player_stats(player['rsn'])
+            stats = await self.fetch_player_stats(player['rsn'])
             player.update(stats)
+            # Add a 5-second delay between requests
+            await asyncio.sleep(5)
         
         # Sort players by total score for initial distribution
         sorted_players = sorted(self.players, key=lambda x: x['total_score'], reverse=True)
@@ -373,7 +376,7 @@ def setup_teams_command(bot: Bot):
             
             # Use the team balancer
             balancer = TeamBalancer(player_stats)
-            team1, team2 = balancer.generate_balanced_teams()
+            team1, team2 = await balancer.generate_balanced_teams()
             
             # Calculate team statistics
             team1_stats = balancer.calculate_team_stats(team1)
@@ -506,7 +509,7 @@ def setup_teams_command(bot: Bot):
             
             # Use the team balancer
             balancer = TeamBalancer(player_stats)
-            team1, team2 = balancer.generate_balanced_teams()
+            team1, team2 = await balancer.generate_balanced_teams()
             
             # Calculate team statistics
             team1_stats = balancer.calculate_team_stats(team1)
