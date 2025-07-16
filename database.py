@@ -405,63 +405,29 @@ class DatabaseManager:
             logger.error(f"Error removing bingo submission: {e}")
             return False
     
-    def migrate_json_to_database(self, completed_json: Dict) -> bool:
-        """Migrate data from completed.json to database"""
+    def clear_all_progress(self) -> bool:
+        """Clear all team progress and submissions from the database"""
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 
-                for team_name, team_data in completed_json.items():
-                    if not isinstance(team_data, dict):
-                        continue
-                    
-                    for tile_key, tile_data in team_data.items():
-                        try:
-                            tile_index = int(tile_key)
-                            
-                            # Get tile ID
-                            cursor.execute("SELECT id FROM bingo_tiles WHERE tile_index = ?", (tile_index,))
-                            tile = cursor.fetchone()
-                            if not tile:
-                                logger.warning(f"Tile {tile_index} not found in database, skipping")
-                                continue
-                            
-                            tile_id = tile['id']
-                            
-                            # Insert team progress
-                            cursor.execute("""
-                                INSERT OR REPLACE INTO bingo_team_progress 
-                                (team_name, tile_id, total_required, completed_count, is_complete)
-                                VALUES (?, ?, ?, ?, ?)
-                            """, (
-                                team_name, tile_id, 
-                                tile_data.get('total_required', 1),
-                                tile_data.get('completed_count', 0),
-                                tile_data.get('completed_count', 0) >= tile_data.get('total_required', 1)
-                            ))
-                            
-                            # Insert submissions
-                            submissions = tile_data.get('submissions', [])
-                            for submission in submissions:
-                                cursor.execute("""
-                                    INSERT INTO bingo_submissions 
-                                    (team_name, tile_id, user_id, drop_name, quantity, status, submitted_at)
-                                    VALUES (?, ?, ?, ?, ?, 'approved', ?)
-                                """, (
-                                    team_name, tile_id, submission['user_id'], 
-                                    submission['drop'], submission['quantity'], datetime.now()
-                                ))
-                        except Exception as e:
-                            logger.error(f"Error processing tile {tile_key} for team {team_name}: {e}")
-                            continue
+                # Clear bingo submissions
+                cursor.execute("DELETE FROM bingo_submissions")
+                submissions_cleared = cursor.rowcount
+                
+                # Clear bingo team progress
+                cursor.execute("DELETE FROM bingo_team_progress")
+                progress_cleared = cursor.rowcount
                 
                 conn.commit()
-                logger.info("Successfully migrated JSON data to database")
-                return True
+                
+            logger.info(f"Cleared {submissions_cleared} submissions and {progress_cleared} progress records")
+            return True
+            
         except Exception as e:
-            logger.error(f"Error migrating JSON to database: {e}")
+            logger.error(f"Error clearing progress: {e}")
             return False
-
+    
     # User Management
     def get_or_create_user(self, discord_id: int, username: str, display_name: str = None, team: str = None) -> Dict:
         """Get or create a user in the database"""

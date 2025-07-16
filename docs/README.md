@@ -1,172 +1,133 @@
 # IC-Bingo-Bot
-A Discord bot for managing RuneScape bingo games with team-based submissions and approval workflows.
+
+A Discord bot for managing RuneScape bingo games with team-based progress tracking and automated board generation.
 
 ## Features
 
-- 🎯 **Bingo Board Management**: Generate and display bingo boards with progress tracking
-- 👥 **Team Support**: Multi-team bingo with role-based access
-- 📝 **Submission System**: Submit drops with approval workflow
-- ✅ **Progress Tracking**: Visual progress indicators on tiles with detailed statistics
-- 🔄 **Hold/Review System**: Hold submissions for review with reason tracking
-- 🎨 **Custom Styling**: RuneScape-themed board appearance
-- 📊 **Advanced Analytics**: Team leaderboards, progress percentages, and detailed statistics
-- 🔧 **Submission Management**: Remove individual submissions and manage tile progress
+- **Team-based Progress Tracking**: Separate progress tracking for multiple teams
+- **Automated Board Generation**: Real-time board images showing completion status
+- **Submission System**: Screenshot-based submissions with approval workflow
+- **Database-backed Storage**: Robust SQLite database for all progress and submissions
+- **Admin Controls**: Comprehensive admin commands for managing the event
+- **Rate Limiting**: Built-in rate limiting to prevent spam
 
-## Setup
+## Commands
 
-### Prerequisites
+### User Commands
+- `/submit` - Submit a completed bingo tile with screenshot
+- `/progress` - View progress for your team or specific tile
+- `/board` - Display the current bingo board (leadership/event coordinator only)
 
-- Python 3.8+
-- Discord Bot Token
-- Discord Server with appropriate channels and roles
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd ic-bot
-   ```
-
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Configure environment variables**
-   ```bash
-   cp env.example .env
-   # Edit .env with your configuration
-   ```
-
-4. **Set up Discord Bot**
-   - Create a Discord application at https://discord.com/developers/applications
-   - Create a bot and get your token
-   - Add the bot to your server with appropriate permissions
-   - Set up the required channels and roles
-
-### Configuration
-
-Copy `env.example` to `.env` and configure the following variables:
-
-```env
-# Required
-DISCORD_BOT_TOKEN=your_bot_token_here
-
-# Optional (defaults shown)
-GUILD_ID=your_guild_id
-REVIEW_CHANNEL_NAME=submissions
-HOLD_REVIEW_CHANNEL_NAME=hold-review
-BOARD_CHANNEL_NAME=bingo-board
-EVENT_COORDINATOR_ROLE=Event Coordinator
-ADMIN_ROLE=Admin
-TEAM_ROLES=Moles,Obor
-DEFAULT_TEAM=all
-```
-
-### Discord Server Setup
-
-1. **Create required channels:**
-   - `submissions` - For team submissions
-   - `hold-review` - For reviewing held submissions
-   - `bingo-board` - For displaying the board
-
-2. **Set up roles:**
-   - `Admin` - For administrative commands
-   - `Event Coordinator` - For event management
-   - Team roles (e.g., `Moles`, `Obor`) - For team members
-
-3. **Configure bot permissions:**
-   - Send Messages
-   - Attach Files
-   - Use Slash Commands
-   - Manage Messages (for editing board posts)
-
-## Usage
-
-### Commands
-
-- `/board show [team]` - Display the current bingo board
-- `/submit` - Submit a drop for approval
-- `/progress [team] [tile]` - View progress for a team or specific tile
-- `/leaderboard` - Show team leaderboard (Admin only)
-- `/manage <tile> [team]` - Manage submissions for a specific tile (Admin/Event Coordinator only)
-- `/stats` - Show detailed statistics for all teams (Admin only)
-- `/sync` - Sync completed.json with current tiles.json values (Admin only)
-- `/validate` - Validate data and show discrepancies (Admin only)
-
-### Workflow
-
-1. **Team members** submit drops using the `/submit` command
-2. **Admins** review submissions and approve/deny/hold them
-3. **Held submissions** are moved to the hold-review channel for further review
-4. **Board updates** automatically when submissions are approved
+### Admin Commands
+- `/migrate_to_db` - Migrate tiles from JSON to database (Admin only)
+- `/clear_progress` - Clear all team progress and submissions (Admin only)
+- `/manage` - Manage submissions and progress (Admin only)
+- `/stats` - Show detailed statistics for all teams
+- `/leaderboard` - Show team leaderboard
 
 ## File Structure
 
 ```
 ic-bot/
-├── main.py              # Bot entry point
-├── config.py            # Configuration management
-├── board.py             # Board generation logic
-├── storage.py           # Data persistence
-├── commands/            # Discord commands
-│   ├── submit.py        # Submission command
-│   └── board_cmd.py     # Board display command
-├── views/               # Discord UI components
-│   ├── approval.py      # Approval buttons
-│   ├── hold.py          # Hold functionality
-│   └── modals.py        # Input modals
-├── assets/              # Static assets
-│   └── fonts/           # Custom fonts
-└── completed.json       # Progress data
+├── main.py                 # Main bot entry point
+├── config.py              # Configuration settings
+├── storage.py             # Database-backed progress functions
+├── board.py               # Board image generation
+├── database.py            # Database management
+├── leaderboard.db         # SQLite database (all progress data)
+├── commands/              # Discord command modules
+│   ├── submit.py          # Submission command
+│   ├── board_cmd.py       # Board display command
+│   ├── progress.py        # Progress tracking command
+│   ├── manage.py          # Admin management command
+│   └── sync.py            # Database management commands
+├── views/                 # Discord UI components
+│   ├── approval.py        # Submission approval view
+│   ├── hold.py            # Hold review view
+│   └── submission_management.py
+├── utils/                 # Utility functions
+├── data/
+│   └── tiles.json         # Tile definitions (name, drops, etc.)
+└── assets/                # Images, fonts, etc.
 ```
 
-## Development
+## Database Schema
 
-### Running the Bot
+The bot uses a SQLite database (`leaderboard.db`) with the following tables:
 
-```bash
-python main.py
-```
+### bingo_tiles
+- `id` - Primary key, tile index
+- `name` - Tile name
+- `drops_needed` - Number of drops required to complete
+- `drops_required` - JSON array of specific drops that count
+- `created_at` - Timestamp
 
-### Logging
+### bingo_submissions
+- `id` - Primary key
+- `team` - Team name
+- `tile_id` - Foreign key to bingo_tiles
+- `user_id` - Discord user ID
+- `drop_name` - Name of the drop submitted
+- `quantity` - Quantity submitted
+- `submitted_at` - Timestamp
 
-The bot logs to both console and `bot.log` file. Log levels:
-- `INFO` - General operations
-- `WARNING` - Non-critical issues
-- `ERROR` - Errors that need attention
+### bingo_team_progress
+- `id` - Primary key
+- `team` - Team name
+- `tile_id` - Foreign key to bingo_tiles
+- `completed_count` - Current progress count
+- `total_required` - Total drops needed
+- `last_updated` - Timestamp
 
-### Data Storage
+## Setup
 
-Progress data is stored in `completed.json` with automatic backups. The file structure:
+1. **Install Dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-```json
-{
-  "team_name": {
-    "tile_index": {
-      "total_required": 10,
-      "completed_count": 5,
-      "submissions": [
-        {
-          "user_id": "123456789",
-          "drop": "Fire cape",
-          "quantity": 1
-        }
-      ]
-    }
-  }
-}
-```
+2. **Configure Environment**
+   Create a `.env` file with:
+   ```
+   DISCORD_BOT_TOKEN=your_bot_token
+   LEADERSHIP_ROLE=leadership
+   EVENT_COORDINATOR_ROLE=event_coordinator
+   ```
 
-## Contributing
+3. **Set Up Database**
+   ```bash
+   python3 setup_database_safeguards.py
+   ```
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+4. **Run the Bot**
+   ```bash
+   python3 main.py
+   ```
 
-## License
+## Progress Tracking
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+All progress data is stored in the SQLite database with automatic consistency checks and foreign key constraints. The system provides:
+
+- **Real-time Updates**: Progress updates immediately reflect on the board
+- **Data Integrity**: Foreign key constraints prevent orphaned data
+- **Performance**: Indexed queries for fast access
+- **Reliability**: ACID compliance for data consistency
+
+## Admin Functions
+
+### Database Management
+- **Clear Progress**: Remove all team progress and submissions
+- **Migrate Tiles**: Sync tile definitions from JSON to database
+- **Validation**: Check database integrity and statistics
+
+### Event Management
+- **Submission Approval**: Review and approve/deny submissions
+- **Progress Monitoring**: Track team progress and statistics
+- **Board Updates**: Generate fresh board images
+
+## Security
+
+- **Role-based Access**: Commands restricted by Discord roles
+- **Rate Limiting**: Prevents command spam
+- **Input Validation**: All inputs validated before processing
+- **Error Handling**: Comprehensive error handling and logging

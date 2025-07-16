@@ -1,42 +1,40 @@
 #!/usr/bin/env python3
 """
-Create a fresh bingo board with all tiles uncompleted
+Create a fresh bingo board with no completion data
 """
 
-import sys
 import os
-
-# Add the current directory to Python path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
+import sys
 from board import generate_board_image, load_placeholders
-from storage import get_completed
 
 def main():
-    print("🎯 Creating fresh bingo board...")
+    print("🎯 Creating Fresh Bingo Board")
+    print("=" * 40)
     
     try:
-        # Load tiles
+        # Load placeholders
         placeholders = load_placeholders()
+        if not placeholders:
+            print("❌ Failed to load placeholders")
+            return False
+            
         print(f"✅ Loaded {len(placeholders)} tiles")
         
-        # Get completed data (should be empty)
-        completed_dict = get_completed()
-        print(f"✅ Loaded completed data: {len(completed_dict)} teams")
-        
         # Generate fresh board image
-        success = generate_board_image(placeholders, completed_dict, team="all")
+        success = generate_board_image(placeholders, team="all")
         
         if success:
-            print("✅ Fresh board created successfully!")
-            print("📁 File: board.png")
+            print("✅ Fresh board image generated successfully!")
+            print("📁 Board saved as: board.png")
+            return True
         else:
-            print("❌ Failed to create board")
+            print("❌ Failed to generate board image")
+            return False
             
     except Exception as e:
-        print(f"❌ Error: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"❌ Error creating fresh board: {e}")
+        return False
 
 if __name__ == "__main__":
-    main() 
+    success = main()
+    sys.exit(0 if success else 1) 

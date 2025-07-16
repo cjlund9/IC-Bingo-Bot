@@ -37,10 +37,8 @@ class SubmissionManagementView(View):
             if success:
                 # Update board
                 from config import load_placeholders
-                from storage import get_completed
                 placeholders = load_placeholders()
-                completed_dict = get_completed()
-                generate_board_image(placeholders, completed_dict, team=self.team)
+                generate_board_image(placeholders, {}, team=self.team)
                 await update_board_message(interaction.guild, interaction.guild.me, team=self.team)
 
                 # Get tile info for response
@@ -203,10 +201,8 @@ class SubmissionSelect(Select):
             if success:
                 # Update board
                 from config import load_placeholders
-                from storage import get_completed
                 placeholders = load_placeholders()
-                completed_dict = get_completed()
-                generate_board_image(placeholders, completed_dict, team=view.team)
+                generate_board_image(placeholders, {}, team=view.team)
                 await update_board_message(interaction.guild, interaction.guild.me, team=view.team)
 
                 removed_submission = view.submissions[submission_index]

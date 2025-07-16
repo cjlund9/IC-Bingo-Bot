@@ -9,15 +9,9 @@ logger = logging.getLogger(__name__)
 async def update_board_message(guild: discord.Guild, bot_user: Optional[discord.User] = None, team: str = "all"):
     """
     Update the bingo board message in the appropriate channels
-    
-    Args:
-        guild: Discord guild
-        bot_user: Bot user object (optional, will be fetched if not provided)
-        team: Team to update board for (defaults to "all")
     """
     from config import BOARD_CHANNEL_NAME, TEAM_ROLES, DEFAULT_TEAM
     from board import generate_board_image, OUTPUT_FILE, load_placeholders
-    from storage import get_completed
 
     # Determine which channels to post to based on team
     channels_to_update = []
@@ -51,7 +45,6 @@ async def update_board_message(guild: discord.Guild, bot_user: Optional[discord.
     if not bot_user:
         bot_user = guild.me
 
-    completed_dict = get_completed()
     placeholders = load_placeholders()
 
     # Generate board image with timestamp to prevent caching
@@ -59,8 +52,8 @@ async def update_board_message(guild: discord.Guild, bot_user: Optional[discord.
     temp_output_file = f"board_{timestamp}.png"
     
     try:
-        # Generate the board image
-        success = generate_board_image(placeholders, completed_dict, team=team)
+        # Generate the board image (DB-backed)
+        success = generate_board_image(placeholders, None, team=team)
         if not success:
             logger.error("Failed to generate board image")
             return
@@ -71,19 +64,16 @@ async def update_board_message(guild: discord.Guild, bot_user: Optional[discord.
         
         # Update each channel with a fresh file object
         for channel in channels_to_update:
-            # Create a new file object for each channel to avoid I/O closed file errors
             file = discord.File(temp_output_file, filename=f"bingo_board_{team}_{timestamp}.png")
             await update_channel_board_message(channel, bot_user, team, file, timestamp)
 
     except Exception as e:
         logger.error(f"Error updating board message: {e}")
     finally:
-        # Clean up temporary file
         try:
-            if os.path.exists(temp_output_file):
-                os.remove(temp_output_file)
-        except Exception as e:
-            logger.error(f"Failed to clean up temporary file: {e}")
+            os.remove(temp_output_file)
+        except Exception:
+            pass
 
 async def update_channel_board_message(channel: discord.TextChannel, bot_user: discord.User, team: str, file: discord.File, timestamp: int):
     """

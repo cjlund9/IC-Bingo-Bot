@@ -5,7 +5,7 @@ import logging
 from typing import Optional
 
 from config import GUILD_ID, TEAM_ROLES, DEFAULT_TEAM, ADMIN_ROLE
-from storage import get_tile_progress, get_team_progress, get_completed
+from storage import get_tile_progress, get_team_progress
 from utils import get_user_team
 from utils.access import team_member_access_check
 

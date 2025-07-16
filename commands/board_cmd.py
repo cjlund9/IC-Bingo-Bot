@@ -9,8 +9,8 @@ from utils.rate_limiter import rate_limit
 logger = logging.getLogger(__name__)
 
 from config import GUILD_ID, TEAM_ROLES, DEFAULT_TEAM, BOARD_CHANNEL_NAME, ADMIN_ROLE
-from storage import get_completed
 from utils.access import leadership_or_event_coordinator_check
+from board import generate_board_image, OUTPUT_FILE
 
 def setup_board_command(bot: Bot):
     @bot.tree.command(
@@ -40,11 +40,8 @@ def setup_board_command(bot: Bot):
                 ephemeral=False
             )
 
-            completed_dict = get_completed()
-            from board import generate_board_image, OUTPUT_FILE
-            
-            # 2. Generate the board image
-            success = generate_board_image(placeholders=None, completed_dict=completed_dict, team=team)
+            # No completed_dict needed; board image will use DB-backed progress
+            success = generate_board_image(placeholders=None, completed_dict=None, team=team)
             
             if success and os.path.exists(OUTPUT_FILE):
                 file = discord.File(OUTPUT_FILE)
@@ -60,6 +57,6 @@ def setup_board_command(bot: Bot):
             logger.error(f"Error displaying board: {e}")
             await interaction.edit_original_response(content=f"❌ Error generating board: {str(e)}")
 
-async def update_board_message(guild: discord.Guild, bot_user: discord.User, team: str = DEFAULT_TEAM):
+def update_board_message(guild: discord.Guild, bot_user: discord.User, team: str = DEFAULT_TEAM):
     from core.update_board import update_board_message as update_board
-    await update_board(guild, bot_user, team)
+    return update_board(guild, bot_user, team)

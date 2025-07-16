@@ -35,9 +35,8 @@ class ApprovalView(View):
         if success:
             from config import load_placeholders
             placeholders = load_placeholders()
-            from storage import get_completed
-            completed_dict = get_completed()
-            board.generate_board_image(placeholders, completed_dict, team=self.team)
+            from board import generate_board_image
+            generate_board_image(placeholders, None, team=self.team)
             await update_board_message(interaction.guild, interaction.guild.me, team=self.team)
 
         from config import load_placeholders
