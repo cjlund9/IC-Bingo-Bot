@@ -33,7 +33,6 @@ from commands.monitor import setup_monitor_command
 
 # Import utilities
 from utils.rate_limiter import cleanup_old_rate_limits, get_rate_limit_stats
-from storage import cleanup_cache
 
 # Configuration
 TOKEN = os.getenv('DISCORD_BOT_TOKEN')
@@ -154,12 +153,6 @@ async def background_maintenance():
             # Clean up old rate limits
             cleanup_old_rate_limits()
             
-            # Clean up expired cache entries
-            cleanup_cache()
-            
-            # Log memory usage every 5 minutes
-            performance_monitor.log_memory_usage()
-            
             # Clean up temporary files
             cleanup_temp_files()
             
@@ -196,14 +189,6 @@ async def on_ready():
         # Log all synced commands for debugging
         for cmd in synced:
             logger.info(f"  - /{cmd.name}")
-        
-        # Auto-sync data on startup
-        from storage import sync_completed_data_with_tiles
-        sync_results = sync_completed_data_with_tiles()
-        if sync_results.get("updated_tiles", 0) > 0:
-            logger.info(f"🔄 Auto-sync completed: {sync_results['updated_tiles']} tiles updated")
-        if sync_results.get("errors"):
-            logger.warning(f"⚠️ Auto-sync errors: {len(sync_results['errors'])} errors")
         
         # Start background tasks
         bot.loop.create_task(background_maintenance())

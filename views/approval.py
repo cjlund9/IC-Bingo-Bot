@@ -2,7 +2,6 @@ import discord
 from discord.ui import View, Button
 from discord import Interaction
 from views.modals import HoldReasonModal, DenyReasonModal
-from storage import completed_dict, save_completed
 import board
 from views.hold import HoldReviewView
 from config import EVENT_COORDINATOR_ROLE, ADMIN_ROLE, HOLD_REVIEW_CHANNEL_NAME

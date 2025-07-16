@@ -2,7 +2,7 @@ import discord
 from discord.ui import Modal, TextInput
 from discord import Interaction
 from config import load_placeholders
-from storage import save_completed, completed_dict
+from storage import mark_tile_submission
 
 HOLD_REVIEW_CHANNEL_NAME = "hold-review"  # Or import from your config
 

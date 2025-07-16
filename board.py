@@ -55,8 +55,9 @@ def validate_inputs(placeholders: List[Dict[str, Any]], completed_dict: Dict[str
         logger.error("No placeholders provided")
         return False
     
-    if not isinstance(completed_dict, dict):
-        logger.error("Completed dict must be a dictionary")
+    # Allow None completed_dict (database will be queried directly)
+    if completed_dict is not None and not isinstance(completed_dict, dict):
+        logger.error("Completed dict must be a dictionary or None")
         return False
     
     if not team or not isinstance(team, str):
@@ -82,24 +83,52 @@ def get_font() -> ImageFont.FreeTypeFont:
 
 
 def calculate_tile_status(completed_dict: Dict[str, Any], team: str) -> Dict[int, int]:
-    """Calculate tile status for the given team"""
+    """Calculate tile status for the given team from database"""
     tile_status = {}
     
     try:
-        if team == "all":
-            # Sum up progress across all teams
-            for team_name, team_data in completed_dict.items():
+        # If completed_dict is None or empty, query the database directly
+        if not completed_dict:
+            import sqlite3
+            conn = sqlite3.connect('leaderboard.db')
+            cursor = conn.cursor()
+            
+            if team == "all":
+                # Sum up progress across all teams
+                cursor.execute('''
+                    SELECT tile_id, SUM(completed_count) as total_progress 
+                    FROM bingo_team_progress 
+                    GROUP BY tile_id
+                ''')
+                for row in cursor.fetchall():
+                    tile_status[row[0]] = row[1]
+            else:
+                # Get progress for specific team
+                cursor.execute('''
+                    SELECT tile_id, completed_count 
+                    FROM bingo_team_progress 
+                    WHERE team = ?
+                ''', (team,))
+                for row in cursor.fetchall():
+                    tile_status[row[0]] = row[1]
+            
+            conn.close()
+        else:
+            # Fallback to old logic if completed_dict is provided
+            if team == "all":
+                # Sum up progress across all teams
+                for team_name, team_data in completed_dict.items():
+                    if isinstance(team_data, dict):
+                        for tile_idx, tile_data in team_data.items():
+                            if isinstance(tile_data, dict) and "completed_count" in tile_data:
+                                tile_status[int(tile_idx)] = tile_status.get(int(tile_idx), 0) + tile_data["completed_count"]
+            else:
+                # Get progress for specific team
+                team_data = completed_dict.get(team, {})
                 if isinstance(team_data, dict):
                     for tile_idx, tile_data in team_data.items():
                         if isinstance(tile_data, dict) and "completed_count" in tile_data:
-                            tile_status[int(tile_idx)] = tile_status.get(int(tile_idx), 0) + tile_data["completed_count"]
-        else:
-            # Get progress for specific team
-            team_data = completed_dict.get(team, {})
-            if isinstance(team_data, dict):
-                for tile_idx, tile_data in team_data.items():
-                    if isinstance(tile_data, dict) and "completed_count" in tile_data:
-                        tile_status[int(tile_idx)] = tile_data["completed_count"]
+                            tile_status[int(tile_idx)] = tile_data["completed_count"]
                 
     except Exception as e:
         logger.error(f"Error calculating tile status: {e}")
