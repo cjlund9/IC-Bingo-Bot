@@ -1,6 +1,6 @@
 [
   {
-    "name": "1x Rare Raid Unique",
+    "name": "Rare Raid Unique",
     "drops_required": [
       "Masori mask 1",
       "Masori chaps 1",
@@ -503,7 +503,7 @@
     "drops_needed": 1
   },
   {
-    "name": "Any Jar",
+    "name": "Any Jar 2",
     "drops_required": [
       "Jar of chemicals 2",
       "Jar of darkness 2",
@@ -708,7 +708,7 @@
     "drops_needed": 4
   },
   {
-    "name": "3x Gauntlet Uniques",
+    "name": "3x Gauntlet Uniques (2)",
     "drops_required": [
       "Crystal armour seed",
       "Enhanced crystal weapon seed",
