@@ -102,7 +102,7 @@ def setup_manage_command(bot: Bot):
         team="Team to manage (optional, defaults to your team)",
         tile="Tile index or name to manage"
     )
-    async def manage_cmd(interaction: Interaction, tile, team: Optional[str] = None):
+    async def manage_cmd(interaction: Interaction, tile: str, team: Optional[str] = None):
         try:
             # Check permissions - only leadership and event coordinators can manage
             roles = [r.name for r in interaction.user.roles]
