@@ -8,6 +8,7 @@ from config import GUILD_ID, TEAM_ROLES, DEFAULT_TEAM, ADMIN_ROLE, EVENT_COORDIN
 from storage import get_tile_progress, get_team_progress
 from views.submission_management import SubmissionManagementView, SubmissionRemovalView
 from utils.access import bot_access_check
+from config import load_placeholders
 
 logger = logging.getLogger(__name__)
 
@@ -99,9 +100,9 @@ def setup_manage_command(bot: Bot):
     @app_commands.check(bot_access_check)
     @app_commands.describe(
         team="Team to manage (optional, defaults to your team)",
-        tile="Tile index to manage"
+        tile="Tile index or name to manage"
     )
-    async def manage_cmd(interaction: Interaction, tile: int, team: Optional[str] = None):
+    async def manage_cmd(interaction: Interaction, tile, team: Optional[str] = None):
         try:
             # Check permissions - only leadership and event coordinators can manage
             roles = [r.name for r in interaction.user.roles]
@@ -111,7 +112,7 @@ def setup_manage_command(bot: Bot):
                     ephemeral=True
                 )
                 return
-            
+
             # Determine team
             if team:
                 team = team.lower()
@@ -131,23 +132,33 @@ def setup_manage_command(bot: Bot):
                         ephemeral=True
                     )
                     return
-            
-            # Validate tile index
-            from config import load_placeholders
+
+            # --- Tile index or name resolution ---
             placeholders = load_placeholders()
-            if tile < 0 or tile >= len(placeholders):
+            tile_index = None
+            # Try to interpret as integer index
+            try:
+                tile_index = int(tile)
+            except (ValueError, TypeError):
+                # Try to match by name (case-insensitive, exact match)
+                for idx, t in enumerate(placeholders):
+                    if t.get("name", "").strip().lower() == str(tile).strip().lower():
+                        tile_index = idx
+                        break
+            if tile_index is None or tile_index < 0 or tile_index >= len(placeholders):
+                valid_names = [t.get("name", f"Tile {i}") for i, t in enumerate(placeholders)]
                 await interaction.response.send_message(
-                    f"❌ Invalid tile index. Must be between 0 and {len(placeholders) - 1}.",
+                    f"❌ Invalid tile '{tile}'. Please use a valid tile index or name.\nValid names: {', '.join(valid_names[:15])}{'...' if len(valid_names) > 15 else ''}",
                     ephemeral=True
                 )
                 return
-            
+
             # Create and send embed with management view
-            embed, view = create_management_embed(team, tile)
+            embed, view = create_management_embed(team, tile_index)
             await interaction.response.send_message(embed=embed, view=view)
-            
-            logger.info(f"Management view opened: Team={team}, Tile={tile}, User={interaction.user.id}")
-            
+
+            logger.info(f"Management view opened: Team={team}, Tile={tile_index}, User={interaction.user.id}")
+
         except Exception as e:
             logger.error(f"Error in manage command: {e}")
             await interaction.response.send_message(
