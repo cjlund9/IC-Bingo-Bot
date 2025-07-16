@@ -1,8 +1,8 @@
 [
   {
-    "name": "2x Raid Uniques",
+    "name": "1x Rare Raid Unique",
     "drops_required": ["Masori mask 1", "Masori chaps 1", "Masori body 1", "Elidinis' ward 1", "Tumeken's shadow 1", "Twisted buckler 1", "Dragon hunter crossbow 1", "Dinh's bulwark 1", "Ancestral hat 1", "Ancestral robe top 1", "Ancestral robe bottom 1", "Dragon claws 1", "Elder maul 1", "Kodai insignia 1", "Twisted bow 1", "Ghrazi rapier 1", "Sanguinesti staff 1", "Justicar faceguard 1", "Justicar chestguard 1", "Justicar leggaurds 1", "Scythe of vitur 1"],
-    "drops_needed": 2
+    "drops_needed": 1
   },
   {
     "name": "Ring of Endurance",
@@ -10,14 +10,14 @@
     "drops_needed": 1
   },
   {
-    "name": "3x Any Voidwaker Pieces",
+    "name": "Any Voidwaker Pieces",
     "drops_required": ["Voidwaker blade", "Voidwaker hilt", "Voidwaker gem"],
-    "drops_needed": 3
+    "drops_needed": 1
   },
   {
-    "name": "3x Unsired",
-    "drops_required": ["Unsired"],
-    "drops_needed": 3
+    "name": "Any Rev Weapon Updrage Item",
+    "drops_required": ["Fangs of venenatis", "Claws of callisto", "Skull of vet'ion" ],
+    "drops_needed": 1
   },
   {
     "name": "Tome of Fire",
@@ -35,7 +35,7 @@
     "drops_needed": 16
   },
   {
-    "name": "Full Guthans",
+    "name": "4x Guthans Pieces",
     "drops_required": ["Guthan's helm", "Guthan's platebody", "Guthan's chainskirt", "Guthan's warspear"],
     "drops_needed": 4
   },
@@ -55,9 +55,9 @@
     "drops_needed": 1
   },
   {
-    "name": "10x Fire Capes",
-    "drops_required": ["Fire Cape"],
-    "drops_needed": 10
+    "name": "Kq Head (not tattered)",
+    "drops_required": ["Kq head"],
+    "drops_needed": 1
   },
   {
     "name": "Lesser Demon Champion Scroll",
@@ -75,17 +75,17 @@
     "drops_needed": 1
   },
   {
-    "name": "5x Broken Zombie helmet",
+    "name": "3x Broken Zombie helmet",
     "drops_required": ["Broken zombie helmet"],
-    "drops_needed": 5
+    "drops_needed": 3
   },
   {
-    "name": "Any sigil",
-    "drops_required": ["Arcane Sigil", "Elysian Sigil", "Spectral Sigil"],
+    "name": "Any Corp drop",
+    "drops_required": ["Arcane Sigil", "Elysian Sigil", "Spectral Sigil", "Holy Elixir", "Spirit Shield"],
     "drops_needed": 1
   },
   {
-    "name": "Full Dharoks",
+    "name": "4x Dharoks Pieces",
     "drops_required": ["Dharok's helm", "Dharok's platebody", "Dharok's platelegs", "Dharok's greataxe"],
     "drops_needed": 4
   },
@@ -95,23 +95,23 @@
     "drops_needed": 1
   },
   {
-    "name": "3x Kree'arra Drops",
+    "name": "Any Kree'arra Drop",
     "drops_required": ["Armadyl helmet", "Armadyl chestplate", "Armadyl chainskirt", "Armadyl hilt"],
-    "drops_needed": 3
+    "drops_needed": 1
   },
   {
-    "name": "Full Eclipse Moon",
+    "name": "3x Eclipse Moon Pieces",
     "drops_required": ["Eclipse moon helm", "Eclipse moon chestplate", "Eclipse moon tassets", "Eclipse atlatl"],
-    "drops_needed": 4
-  },
-  {
-    "name": "Magic Fang, Serpentine Visage, Tanzanatie Fang",
-    "drops_required": ["Tanzanite fang", "Magic fang", "Serpentine visage"],
     "drops_needed": 3
   },
   {
-    "name": "DT2 Unique",
-    "drops_required": ["Chromium ingot 1", "Magus vestige 1", "Virtus mask 1", "Virtus robe top 1", "Virtus robe bottom 1", "Ice quartz 1", "Venator vestige 1", "Smoke quartz 1", "Bellator vestige 1", "Shadow quartz 1", "Ultor vestige 1", "Blood quartz 1"],
+    "name": "2x Any Zulrah Fang",
+    "drops_required": ["Tanzanite fang", "Magic fang"],
+    "drops_needed": 2
+  },
+  {
+    "name": "Any Virtus Piece",
+    "drops_required": ["Virtus mask 1", "Virtus robe top 1", "Virtus robe bottom 1"],
     "drops_needed": 1
   },
   {
@@ -145,9 +145,9 @@
     "drops_needed": 5
   },
   {
-    "name": "3x TOA Jewels",
-    "drops_required": ["Jewel of the sun", "Jewel of amascut", "Breach of the scarab", "Eye of the corruptor"],
-    "drops_needed": 3
+    "name": "1x Rare Raid Unique",
+    "drops_required": ["Masori mask", "Masori chaps", "Masori body", "Elidinis' ward", "Tumeken's shadow", "Twisted buckler", "Dragon hunter crossbow", "Dinh's bulwark", "Ancestral hat", "Ancestral robe top", "Ancestral robe bottom", "Dragon claws", "Elder maul", "Kodai insignia", "Twisted bow", "Ghrazi rapier", "Sanguinesti staff", "Justicar faceguard", "Justicar chestguard", "Justicar leggaurds", "Scythe of vitur"],
+    "drops_needed": 1
   },
   {
     "name": "3x Cerb Crystals",
@@ -160,29 +160,29 @@
     "drops_needed": 1
   },
   {
-    "name": "3x Yama Uniques",
+    "name": "Any Yama Uniques",
     "drops_required": ["Oathplate Helm", "Oathplate Legs", "Oathplate Chest", "Soulflame horn"],
-    "drops_needed": 3
+    "drops_needed": 1
   },
   {
-    "name": "All 3 DK Rings",
-    "drops_required": ["Berzerker Ring", "Archers Ring", "Seer's Ring"],
-    "drops_needed": 3
+    "name": "All 4 DK Rings",
+    "drops_required": ["Berzerker Ring", "Archers Ring", "Seer's Ring", "Warrior Ring"],
+    "drops_needed": 4
   },
   {
-    "name": "2x Raid Uniques",
-    "drops_required": ["Masori mask 2", "Masori chaps 2", "Masori body 2", "Elidinis' ward 2", "Tumeken's shadow 2", "Twisted buckler 2", "Dragon hunter crossbow 2", "Dinh's bulwark 2", "Ancestral hat 2", "Ancestral robe top 2", "Ancestral robe bottom 2", "Dragon claws 2", "Elder maul 2", "Kodai insignia 2", "Twisted bow 2", "Ghrazi rapier 2", "Sanguinesti staff 2", "Justicar faceguard 2", "Justicar chestguard 2", "Justicar leggaurds 2", "Scythe of vitur 2"],
-    "drops_needed": 2
+    "name": "Black Tourmaline Core",
+    "drops_required": ["Black tourmaline core"],
+    "drops_needed": 1
   },
   {
-    "name": "2x Nex Unique",
+    "name": "Any Nex Unique",
     "drops_required": ["Zaryte vambraces 1", "Nihil horn 1", "Torva full helm (damaged) 1", "Torva platebody (damaged) 1", "Torva platelegs (damaged) 1", "Ancient hilt 1"],
-    "drops_needed": 2
+    "drops_needed": 1
   },
   {
-    "name": "3x Colo Uniques",
+    "name": "Any Colo Uniques",
     "drops_required": ["Sunfire fanactic helm", "Sunfire fanatic cuirass", "Sunfire fanatic chausses", "Tonalztics of ralos", "Echo crystal"],
-    "drops_needed": 3
+    "drops_needed": 1
   },
   {
     "name": "Tome of Water",
@@ -215,7 +215,7 @@
     "drops_needed": 1
   },
   {
-    "name": "Full Obsidian Armour and Weapons",
+    "name": "4x any Obsidian Armour and Weapons",
     "drops_required": ["Toktz-xi-ul", "Toktz-xil-ak", "Toktz-xil-ek", "Tzhaar-ket-om", "Toktz-mej-tal", "Tzhaar-ket-em", "Obsidian cape", "Toktz-ket-xil"],
     "drops_needed": 8
   },
@@ -225,9 +225,9 @@
     "drops_needed": 1
   },
   {
-    "name": "3x Tempoross Uniques",
-    "drops_required": ["Fish barrel", "Tackle box", "Dragon harpoon", "Big harpoonfish"],
-    "drops_needed": 3
+    "name": "Dragon hunter Wand",
+    "drops_required": ["Dragon hunter wand"],
+    "drops_needed": 1
   },
   {
     "name": "Any Jar",
@@ -235,19 +235,19 @@
     "drops_needed": 1
   },
   {
-    "name": "Nightmare Unique",
-    "drops_required": ["Nightmare staff 2", "Inquisitor's great helm 2", "Inquisitor's hauberk 2", "Inquisitor's plateskirt 2", "Inquisitor's mace 2", "Eldritch orb 2", "Harmonised orb 2", "Volatile orb 2"],
+    "name": "Tome of Earth",
+    "drops_required": ["Tome of Earth"],
     "drops_needed": 1
   },
   {
-    "name": "Any Pet",
-    "drops_required": ["Abyssal Orphan 2", "Baby mole 2", "Baron 2", "Bran 2", "Butch 2", "Callisto cub 2", "Hellpuppy 2", "Huberte 2", "Ikkle hydra 2", "Jal-nib-rek 2", "Kalphite princess 2", "Lil' zik 2", "Lil'viathan 2", "Little nightmare 2", "Moxi 2", "Muphin 2", "Nexling 2", "Nid 2", "Noon 2", "Omlet 2", "Pet Chaos Elemental 2", "Pet dagannoth prime 2", "Pet dagannoth rex 2", "Pet dagannoth supreme 2", "Pet dark core 2", "Pet general graardor 2", "Pet k'ril tsutsaroth 2", "Pet kraken 2", "Pet kree'arra 2", "Pet smoke devil 2", "Pet snakeling 2", "Pet zilyana 2", "Phoenix 2", "Prince black dragon 2", "Scorpia's offspring 2", "Scurry 2", "Skotos 2", "Smolcano 2", "Smol heredit 2", "Sraracha 2", "Tiny tempor 2", "Tumeken's guardian 2", "Tzrek-jad 2", "Venenatis spiderling 2", "Vet'ion jr. 2", "Vorki 2", "Wisp 2", "Yami 2", "Youngllef 2"],
+    "name": "Earth Warrior Champion Scroll",
+    "drops_required": ["Earth Warrior Champion Scroll"],
     "drops_needed": 1
   },
   {
-    "name": "2x Raid Uniques",
+    "name": "1x Rare Raid Uniques",
     "drops_required": ["Masori mask 3", "Masori chaps 3", "Masori body 3", "Elidinis' ward 3", "Tumeken's shadow 3", "Twisted buckler 3", "Dragon hunter crossbow 3", "Dinh's bulwark 3", "Ancestral hat 3", "Ancestral robe top 3", "Ancestral robe bottom 3", "Dragon claws 3", "Elder maul 3", "Kodai insignia 3", "Twisted bow 3", "Ghrazi rapier 3", "Sanguinesti staff 3", "Justicar faceguard 3", "Justicar chestguard 3", "Justicar leggaurds 3", "Scythe of vitur 3"],
-    "drops_needed": 2
+    "drops_needed": 1
   },
   {
     "name": "2x Common Raid Uniques",
@@ -255,9 +255,9 @@
     "drops_needed": 2
   },
   {
-    "name": "10x Zombie Axe",
+    "name": "3x Zombie Axe",
     "drops_required": ["Broken Zombie Axe"],
-    "drops_needed": 10
+    "drops_needed": 3
   },
   {
     "name": "Any Rev Weapons",
@@ -280,9 +280,9 @@
     "drops_needed": 2
   },
   {
-    "name": "10 Scurrius spines",
+    "name": "6 Scurrius spines",
     "drops_required": ["Scurrius Spine"],
-    "drops_needed": 10
+    "drops_needed": 6
   },
   {
     "name": "Dragon Warhammer",
@@ -290,44 +290,44 @@
     "drops_needed": 1
   },
   {
-    "name": "Full Granite",
+    "name": "4x Granite Pieces",
     "drops_required": ["Granite Helm", "Granite body", "Granite legs", "Granite gloves", "Granite boots", "Granite shield", "Granite ring", "Granite maul", "Granite longsword", "Granite hammer"],
-    "drops_needed": 10
+    "drops_needed": 4
   },
   {
-    "name": "2x Occult Necklace",
-    "drops_required": ["Occult Necklace"],
+    "name": "Occult Necklace and Smoke Battlestaff",
+    "drops_required": ["Occult Necklace", "Smoke battlestaff"],
     "drops_needed": 2
   },
   {
-    "name": "2x Any Vork Unique",
+    "name": "Any Vork Unique (Visage's and necklace)",
     "drops_required": ["Draconic visage", "Skeletal visage", "Dragonbone necklace"],
-    "drops_needed": 2
+    "drops_needed": 1
   },
   {
-    "name": "Full Torag",
+    "name": "Any 4 Torag Pieces",
     "drops_required": ["Torag's helm", "Torag's platebody", "Torag's platelegs", "Torag's hammers"],
     "drops_needed": 4
   },
   {
-    "name": "2x Sarachnis Cudgel",
+    "name": "3x Sarachnis Cudgel",
     "drops_required": ["Sarachnis Cudgel"],
     "drops_needed": 2
   },
   {
-    "name": "Full Soulreaper Axe",
+    "name": "Any Soulreaper Axe Piece",
     "drops_required": ["Leviathan's lure", "Siren's staff", "Executioner's axe head", "Eye of the duke"],
-    "drops_needed": 4
+    "drops_needed": 1
   },
   {
-    "name": "Full Verac's",
+    "name": "4x Verac's Pieces",
     "drops_required": ["Verac's helm", "Verac's brassard", "Verac's plateskirt", "Verac's flail"],
     "drops_needed": 4
   },
   {
-    "name": "2x Sulphur Blades",
-    "drops_required": ["Sulphur blades"],
-    "drops_needed": 2
+    "name": "2x Sulphur Blades and 2x Glacial Temotli",
+    "drops_required": ["Sulphur blades", "Glacial Temotli"],
+    "drops_needed": 4
   },
   {
     "name": "3x Gauntlet Uniques",
@@ -335,14 +335,14 @@
     "drops_needed": 3
   },
   {
-    "name": "Full Blood Moon",
+    "name": "3x Blood Moon Pieces",
     "drops_required": ["Blood moon helm", "Blood moon chestplate", "Blood moon tassets", "Dual macuahuitl"],
-    "drops_needed": 4
+    "drops_needed": 3
   },
   {
-    "name": "10x Black masks",
+    "name": "2x Black masks",
     "drops_required": ["Black mask(10)"],
-    "drops_needed": 10
+    "drops_needed": 2
   },
   {
     "name": "3x Noxious Halberd Pieces",
@@ -350,8 +350,8 @@
     "drops_needed": 3
   },
   {
-    "name": "Onyx",
-    "drops_required": ["Onyx"],
+    "name": "Uncut Onyx",
+    "drops_required": ["Uncut Onyx"],
     "drops_needed": 1
   },
   {
@@ -365,9 +365,9 @@
     "drops_needed": 5
   },
   {
-    "name": "2x Nex Uniques",
-    "drops_required": ["Zaryte vambraces 2", "Nihil horn 2", "Torva full helm (damaged) 2", "Torva platebody (damaged) 2", "Torva platelegs (damaged) 2", "Ancient hilt 2"],
-    "drops_needed": 2
+    "name": "4x Kraken Tentacle",
+    "drops_required": ["Kraken Tentacle"],
+    "drops_needed": 4
   },
   {
     "name": "Full Ballista from scratch",
@@ -380,8 +380,8 @@
     "drops_needed": 3
   },
   {
-    "name": "Any Mutagen",
-    "drops_required": ["Tanzanite mutagen", "Magma mutagen"],
+    "name": "Dragon Pickaxe (Broken)",
+    "drops_required": ["Dragon Pickaxe (Broken)"],
     "drops_needed": 1
   },
   {
@@ -390,14 +390,14 @@
     "drops_needed": 5
   },
   {
-    "name": "Bottomless Compost Bucket",
-    "drops_required": ["Bottomless Compost Bucket"],
-    "drops_needed": 1
+    "name": "2 Zenyte Shards",
+    "drops_required": ["Zenyte Shard"],
+    "drops_needed": 2
   },
   {
-    "name": "3x Cerb Crystals",
-    "drops_required": ["Primordial crystal", "Pegasian crystal", "Eternal crystal", "Smouldering stone"],
-    "drops_needed": 3
+    "name": "Amulet of eternal glory",
+    "drops_required": ["Amulet of Eternal Glory"],
+    "drops_needed": 1
   },
   {
     "name": "3x Bandos Uniques",
@@ -410,14 +410,14 @@
     "drops_needed": 1
   },
   {
-    "name": "Any Pet",
-    "drops_required": ["Abyssal Orphan 3", "Baby mole 3", "Baron 3", "Bran 3", "Butch 3", "Callisto cub 3", "Hellpuppy 3", "Huberte 3", "Ikkle hydra 3", "Jal-nib-rek 3", "Kalphite princess 3", "Lil' zik 3", "Lil'viathan 3", "Little nightmare 3", "Moxi 3", "Muphin 3", "Nexling 3", "Nid 3", "Noon 3", "Omlet 3", "Pet Chaos Elemental 3", "Pet dagannoth prime 3", "Pet dagannoth rex 3", "Pet dagannoth supreme 3", "Pet dark core 3", "Pet general graardor 3", "Pet k'ril tsutsaroth 3", "Pet kraken 3", "Pet kree'arra 3", "Pet smoke devil 3", "Pet snakeling 3", "Pet zilyana 3", "Phoenix 3", "Prince black dragon 3", "Scorpia's offspring 3", "Scurry 3", "Skotos 3", "Smolcano 3", "Smol heredit 3", "Sraracha 3", "Tiny tempor 3", "Tumeken's guardian 3", "Tzrek-jad 3", "Venenatis spiderling 3", "Vet'ion jr. 3", "Vorki 3", "Wisp 3", "Yami 3", "Youngllef 3"],
-    "drops_needed": 1
+    "name": "Any 5 Bob the cat shirts",
+    "drops_required": ["Bob's Red Shirt", "Bob's Green Shirt", "Bob's Blue Shirt", "Bob's Black Shirt", "Bob's Purple Shirt"],
+    "drops_needed": 5
   },
   {
-    "name": "Gold Lock",
-    "drops_required": ["Gold locks"],
-    "drops_needed": 1
+    "name": "2x Delve Boss Unique",
+    "drops_required": ["Avernic Treads", "Eye of ayak", "Mokhaiotl cloth"],
+    "drops_needed": 2
   },
   {
     "name": "5000 Pieces of Eight",
@@ -430,9 +430,9 @@
     "drops_needed": 3
   },
   {
-    "name": "2x Raid Uniques",
-    "drops_required": ["Masori mask 4", "Masori chaps 4", "Masori body 4", "Elidinis' ward 4", "Tumeken's shadow 4", "Twisted buckler 4", "Dragon hunter crossbow 4", "Dinh's bulwark 4", "Ancestral hat 4", "Ancestral robe top 4", "Ancestral robe bottom 4", "Dragon claws 4", "Elder maul 4", "Kodai insignia 4", "Twisted bow 4", "Ghrazi rapier 4", "Sanguinesti staff 4", "Justicar faceguard 4", "Justicar chestguard 4", "Justicar leggaurds 4", "Scythe of vitur 4"],
-    "drops_needed": 2
+    "name": "3x Medium clue boots",
+    "drops_required": ["Ranger Boots", "Wizard Boots", "Holy Sandals", "Climbing Boots (g)", "Spiked Manacles"],
+    "drops_needed": 3
   },
   {
     "name": "Hill Giant Club",
@@ -440,14 +440,14 @@
     "drops_needed": 1
   },
   {
-    "name": "DT2 Unique",
-    "drops_required": ["Chromium ingot 2", "Magus vestige 2", "Virtus mask 2", "Virtus robe top 2", "Virtus robe bottom 2", "Ice quartz 2", "Venator vestige 2", "Smoke quartz 2", "Bellator vestige 2", "Shadow quartz 2", "Ultor vestige 2", "Blood quartz 2"],
+    "name": "Shaman Mask",
+    "drops_required": ["Shaman Mask"],
     "drops_needed": 1
   },
   {
-    "name": "2x Merfolk Tridents",
+    "name": "1x Merfolk Tridents",
     "drops_required": ["Merfolk Trident"],
-    "drops_needed": 2
+    "drops_needed": 1
   },
   {
     "name": "3x Bludgeon Pieces",
@@ -470,12 +470,12 @@
     "drops_needed": 1
   },
   {
-    "name": "Lava Battlestaff",
-    "drops_required": ["Lava Battlestaff"],
+    "name": "Any Chaos Elder Robe Piece",
+    "drops_required": ["Elder chaos hood", "Elder chaos top", "Elder chaos robe"],
     "drops_needed": 1
   },
   {
-    "name": "Full Ahrims",
+    "name": "4x Ahrims Pieces",
     "drops_required": ["Ahrim's hood", "Ahrim's robetop", "Ahrim's robeskirt", "Ahrim's staff"],
     "drops_needed": 4
   },
@@ -490,13 +490,13 @@
     "drops_needed": 1
   },
   {
-    "name": "Imbued Heart",
-    "drops_required": ["Imbued Heart"],
+    "name": "Dragon Metal Slice/Lump",
+    "drops_required": ["Dragon metal slice", "Dragon metal lump"],
     "drops_needed": 1
   },
   {
-    "name": "Full Blue Moon",
+    "name": "3x Blue Moon pieces",
     "drops_required": ["Blue moon helm", "Blue moon chestplate", "Blue moon tassets", "Blue moon spear"],
-    "drops_needed": 4
+    "drops_needed": 3
   } 
 ]
