@@ -35,9 +35,11 @@ def setup_stats_command(bot: Bot):
                     completed_tiles = team_progress.get("completed_tiles", 0)
                     in_progress_tiles = team_progress.get("in_progress_tiles", 0)
                     completion_percentage = team_progress.get("completion_percentage", 0)
+                    tile_progress = team_progress.get("tile_progress", {})
+                    tile_indices = list(tile_progress.keys())
+                    print(f"[DEBUG] Team: {team}, total_tiles: {total_tiles}, completed_tiles: {completed_tiles}, tile_indices: {tile_indices}")
                     
                     # Calculate average progress for in-progress tiles
-                    tile_progress = team_progress.get("tile_progress", {})
                     total_progress = 0
                     in_progress_count = 0
                     
