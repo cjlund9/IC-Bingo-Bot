@@ -8,9 +8,19 @@ import os
 logger = logging.getLogger(__name__)
 
 class DatabaseManager:
+    _instance = None
+    _initialized = False
+    
+    def __new__(cls, db_path: str = "leaderboard.db"):
+        if cls._instance is None:
+            cls._instance = super(DatabaseManager, cls).__new__(cls)
+        return cls._instance
+    
     def __init__(self, db_path: str = "leaderboard.db"):
-        self.db_path = db_path
-        self.init_database()
+        if not self._initialized:
+            self.db_path = db_path
+            self.init_database()
+            self._initialized = True
     
     def init_database(self):
         """Initialize the database with schema"""
@@ -43,6 +53,13 @@ class DatabaseManager:
     def _add_bingo_tables(self, conn):
         """Add bingo tables to existing database"""
         try:
+            # Check if bingo_tiles table already exists
+            cursor = conn.cursor()
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='bingo_tiles'")
+            if cursor.fetchone():
+                logger.info("Bingo tables already exist, skipping creation")
+                return
+            
             bingo_schema = """
             -- Bingo tiles table - stores tile definitions
             CREATE TABLE IF NOT EXISTS bingo_tiles (
@@ -105,23 +122,24 @@ class DatabaseManager:
             );
 
             -- Bingo-specific indexes
-            CREATE INDEX idx_bingo_tiles_index ON bingo_tiles(tile_index);
-            CREATE INDEX idx_bingo_team_progress_team ON bingo_team_progress(team_name);
-            CREATE INDEX idx_bingo_team_progress_tile ON bingo_team_progress(tile_id);
-            CREATE INDEX idx_bingo_team_progress_complete ON bingo_team_progress(is_complete);
-            CREATE INDEX idx_bingo_submissions_team ON bingo_submissions(team_name);
-            CREATE INDEX idx_bingo_submissions_tile ON bingo_submissions(tile_id);
-            CREATE INDEX idx_bingo_submissions_user ON bingo_submissions(user_id);
-            CREATE INDEX idx_bingo_submissions_status ON bingo_submissions(status);
-            CREATE INDEX idx_bingo_submissions_submitted ON bingo_submissions(submitted_at);
-            CREATE INDEX idx_bingo_tile_drops_tile ON bingo_tile_drops(tile_id);
+            CREATE INDEX IF NOT EXISTS idx_bingo_tiles_index ON bingo_tiles(tile_index);
+            CREATE INDEX IF NOT EXISTS idx_bingo_team_progress_team ON bingo_team_progress(team_name);
+            CREATE INDEX IF NOT EXISTS idx_bingo_team_progress_tile ON bingo_team_progress(tile_id);
+            CREATE INDEX IF NOT EXISTS idx_bingo_team_progress_complete ON bingo_team_progress(is_complete);
+            CREATE INDEX IF NOT EXISTS idx_bingo_submissions_team ON bingo_submissions(team_name);
+            CREATE INDEX IF NOT EXISTS idx_bingo_submissions_tile ON bingo_submissions(tile_id);
+            CREATE INDEX IF NOT EXISTS idx_bingo_submissions_user ON bingo_submissions(user_id);
+            CREATE INDEX IF NOT EXISTS idx_bingo_submissions_status ON bingo_submissions(status);
+            CREATE INDEX IF NOT EXISTS idx_bingo_submissions_submitted ON bingo_submissions(submitted_at);
+            CREATE INDEX IF NOT EXISTS idx_bingo_tile_drops_tile ON bingo_tile_drops(tile_id);
             """
             conn.executescript(bingo_schema)
             conn.commit()
             logger.info("Bingo tables added successfully")
         except Exception as e:
             logger.error(f"Error adding bingo tables: {e}")
-            raise
+            # Don't raise the exception, just log it and continue
+            # This prevents the database initialization from failing completely
     
     @contextmanager
     def get_connection(self):
