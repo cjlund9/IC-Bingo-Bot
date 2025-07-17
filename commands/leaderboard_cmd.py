@@ -84,6 +84,14 @@ class WOMMetricModal(discord.ui.Modal, title="Search WOM Metric"):
         for clue in CLUES:
             if user_input in clue.lower() or clue.lower() in user_input:
                 return "clue", clue
+        # Check activities
+        for activity in ACTIVITIES:
+            if user_input in activity.lower() or activity.lower() in user_input:
+                return "activity", activity
+        # Check virtual
+        for virtual in VIRTUAL:
+            if user_input in virtual.lower() or virtual.lower() in user_input:
+                return virtual, virtual
         return None, None
 
     def get_suggestions(self, user_input: str) -> str:
@@ -101,9 +109,76 @@ class WOMMetricModal(discord.ui.Modal, title="Search WOM Metric"):
             suggestions = [
                 "• Popular bosses: zulrah, vorkath, cerberus",
                 "• Popular skills: slayer, agility, thieving",
-                "• Clues: all, beginner, easy, medium, hard, elite, master"
+                "• Clues: all, beginner, easy, medium, hard, elite, master",
+                "• Activities: bounty-hunter-hunter, last-man-standing, pvp-arena, soul-wars-zeal",
+                "• Virtual: ehp, ehb"
             ]
         return '\n'.join(suggestions[:8])
+
+class WOMAPISearchModal(discord.ui.Modal, title="Search WOM API Leaderboard"):
+    def __init__(self):
+        super().__init__()
+        self.username = discord.ui.TextInput(
+            label="Username (optional)",
+            placeholder="e.g., zezima",
+            required=False,
+            max_length=12
+        )
+        self.metric = discord.ui.TextInput(
+            label="Metric (e.g., overall, attack, ehp)",
+            placeholder="overall",
+            required=False,
+            max_length=20
+        )
+        self.period = discord.ui.TextInput(
+            label="Period (e.g., day, week, month)",
+            placeholder="week",
+            required=False,
+            max_length=10
+        )
+        self.add_item(self.username)
+        self.add_item(self.metric)
+        self.add_item(self.period)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        username = self.username.value.strip()
+        metric = self.metric.value.strip() or "overall"
+        period = self.period.value.strip() or "week"
+
+        params = {"metric": metric, "period": period}
+        if username:
+            params["username"] = username
+
+        try:
+            response = requests.get("https://api.wiseoldman.net/v2/competitions/leaderboard", params=params, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                if not data or not data.get("players"):
+                    await interaction.followup.send("❌ No leaderboard data found for your query.", ephemeral=True)
+                    return
+                players = data["players"]
+                embed = discord.Embed(
+                    title=f"🌐 WOM API: {metric.capitalize()} ({period})",
+                    description=f"Top results for your query.",
+                    color=0xFFD700,
+                    timestamp=datetime.now()
+                )
+                for i, player in enumerate(players[:10], 1):
+                    name = player.get("displayName", "Unknown")
+                    value = player.get("value", "N/A")
+                    embed.add_field(
+                        name=f"#{i}: {name}",
+                        value=f"Value: {value}",
+                        inline=False
+                    )
+                embed.set_footer(text=f"🌐 WOM API • {metric.capitalize()} • {period})")
+                await interaction.followup.send(embed=embed, ephemeral=True)
+            else:
+                await interaction.followup.send(f"❌ WOM API error: {response.status_code}", ephemeral=True)
+        except Exception as e:
+            logger.error(f"Error querying WOM API: {e}")
+            await interaction.followup.send(f"❌ Error querying WOM API: {e}", ephemeral=True)
 
 class LeaderboardView(discord.ui.View):
     def __init__(self, db: DatabaseManager):
@@ -145,6 +220,11 @@ class LeaderboardView(discord.ui.View):
     @discord.ui.button(label="🔍 WOM Search", style=discord.ButtonStyle.secondary, custom_id="wom_search")
     async def wom_search_button(self, interaction: Interaction, button: discord.ui.Button):
         modal = WOMMetricModal(self)
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="🌐 WOM API", style=discord.ButtonStyle.secondary, custom_id="wom_api")
+    async def wom_api_button(self, interaction: Interaction, button: discord.ui.Button):
+        modal = WOMAPISearchModal()
         await interaction.response.send_modal(modal)
 
     async def create_leaderboard_embed(self) -> discord.Embed:
