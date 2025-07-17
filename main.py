@@ -27,9 +27,10 @@ from commands.manage import setup_manage_command
 from commands.sync import setup_sync_command
 from commands.teams_consolidated import setup_teams_consolidated_command
 from commands.stats import setup_stats_command
-from commands.leaderboard_cmd import setup_leaderboard_commands
+# from commands.leaderboard_cmd import setup_leaderboard_commands  # Removed - leaderboard command is in progress.py
 # from commands.shop_cmd import setup_shop_commands  # Temporarily disabled
 from commands.monitor import setup_monitor_command
+from commands.total_leaderboard import setup_total_leaderboard_command
 
 # Import utilities
 from utils.rate_limiter import cleanup_old_rate_limits, get_rate_limit_stats
@@ -232,9 +233,10 @@ async def main():
         setup_sync_command(bot)
         setup_teams_consolidated_command(bot)
         setup_stats_command(bot)
-        setup_leaderboard_commands(bot)
+        # setup_leaderboard_commands(bot)  # Removed - leaderboard command is in progress.py
         # setup_shop_commands(bot)  # Temporarily disabled
         setup_monitor_command(bot)
+        setup_total_leaderboard_command(bot)
         
         logger.info("✅ Application commands registered successfully")
     except Exception as e:

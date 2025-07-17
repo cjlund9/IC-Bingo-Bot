@@ -45,7 +45,7 @@ class DatabaseManager:
         try:
             bingo_schema = """
             -- Bingo tiles table - stores tile definitions
-            CREATE TABLE bingo_tiles (
+            CREATE TABLE IF NOT EXISTS bingo_tiles (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 tile_index INTEGER NOT NULL, -- 0-99 for 10x10 board
                 name TEXT NOT NULL,
@@ -56,7 +56,7 @@ class DatabaseManager:
             );
 
             -- Bingo tile drops table - stores required drops for each tile
-            CREATE TABLE bingo_tile_drops (
+            CREATE TABLE IF NOT EXISTS bingo_tile_drops (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 tile_id INTEGER NOT NULL,
                 drop_name TEXT NOT NULL,
@@ -66,7 +66,7 @@ class DatabaseManager:
             );
 
             -- Bingo team progress table - tracks team progress on tiles
-            CREATE TABLE bingo_team_progress (
+            CREATE TABLE IF NOT EXISTS bingo_team_progress (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 team_name TEXT NOT NULL,
                 tile_id INTEGER NOT NULL,
@@ -80,7 +80,7 @@ class DatabaseManager:
             );
 
             -- Bingo submissions table - stores individual drop submissions
-            CREATE TABLE bingo_submissions (
+            CREATE TABLE IF NOT EXISTS bingo_submissions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 team_name TEXT NOT NULL,
                 tile_id INTEGER NOT NULL,

@@ -13,26 +13,35 @@ import requests
 logger = logging.getLogger(__name__)
 
 # Complete WOM metric lists
-BOSSES = [
-    "abyssal-sire", "alchemical-hydra", "barrows-chests", "bryophyta", "callisto", "cerberus",
-    "chambers-of-xeric", "chambers-of-xeric-challenge-mode", "chaos-elemental", "chaos-fanatic",
-    "commander-zilyana", "corporeal-beast", "crazy-archaeologist", "dagannoth-prime",
-    "dagannoth-rex", "dagannoth-supreme", "deranged-archaeologist", "general-graardor",
-    "giant-mole", "grotesque-guardians", "hespori", "kalphite-queen", "king-black-dragon",
-    "kraken", "kree'arra", "kril-tsutsaroth", "mimic", "nightmare", "phosanis-nightmare",
-    "obor", "sarachnis", "scorpia", "skotizo", "tempoross", "the-gauntlet",
-    "the-corrupted-gauntlet", "theatre-of-blood", "theatre-of-blood-hard", "thermonuclear-smoke-devil",
-    "tzkal-zuk", "tztok-jad", "venenatis", "vetion", "vorkath", "wintertodt", "zalcano", "zulrah"
-]
-
 SKILLS = [
     "overall", "attack", "defence", "strength", "hitpoints", "ranged", "prayer", "magic",
     "cooking", "woodcutting", "fletching", "fishing", "firemaking", "crafting", "smithing",
     "mining", "herblore", "agility", "thieving", "slayer", "farming", "runecrafting", "hunter", "construction"
 ]
 
+BOSSES = [
+    "abyssal-sire", "alchemical-hydra", "artio", "barrows-chests", "bryophyta", "callisto", "calvarion", "cerberus",
+    "chambers-of-xeric", "chambers-of-xeric-challenge-mode", "chaos-elemental", "chaos-fanatic", "commander-zilyana",
+    "corporeal-beast", "crazy-archaeologist", "dagannoth-prime", "dagannoth-rex", "dagannoth-supreme",
+    "deranged-archaeologist", "duke-sucellus", "general-graardor", "giant-mole", "grotesque-guardians", "hespori",
+    "kalphite-queen", "king-black-dragon", "kraken", "kree'arra", "kril-tsutsaroth", "mimic", "nex", "nightmare",
+    "phosanis-nightmare", "obor", "phantom-muspah", "sarachnis", "scorpia", "skotizo", "spindel", "tempoross",
+    "the-gauntlet", "the-corrupted-gauntlet", "the-leviathan", "the-whisperer", "theatre-of-blood",
+    "theatre-of-blood-hard", "thermonuclear-smoke-devil", "tzkal-zuk", "tztok-jad", "venenatis", "vetion", "vorkath",
+    "wintertodt", "zalcano", "zulrah"
+]
+
 CLUES = [
     "all", "beginner", "easy", "medium", "hard", "elite", "master"
+]
+
+ACTIVITIES = [
+    "bounty-hunter-hunter", "bounty-hunter-rogue", "last-man-standing", "pvp-arena", "soul-wars-zeal",
+    "rifts-closed", "colosseum-gladiator"
+]
+
+VIRTUAL = [
+    "ehp", "ehb"
 ]
 
 class WOMMetricModal(discord.ui.Modal, title="Search WOM Metric"):
