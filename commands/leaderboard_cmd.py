@@ -136,22 +136,56 @@ class LeaderboardView(discord.ui.View):
         return embed
     
     async def create_bingo_leaderboard(self) -> discord.Embed:
-        # This would need to be implemented based on your bingo data structure
-        # For now, showing a placeholder
+        # Get real bingo completion data from database
+        team_scores = []
+        
+        # Calculate scores for each team
+        for team_role in TEAM_ROLES:
+            team = team_role.lower()
+            team_progress = get_team_progress(team)
+            if team_progress:
+                completed_tiles = team_progress.get("completed_tiles", 0)
+                total_tiles = team_progress.get("total_tiles", 0)
+                completion_percentage = team_progress.get("completion_percentage", 0)
+                team_scores.append({
+                   "team": team_role,
+                   "completed": completed_tiles,
+                   "total": total_tiles,
+                   "percentage": completion_percentage
+                })
+        
+        # Sort by completion percentage (descending)
+        team_scores.sort(key=lambda x: x["percentage"], reverse=True)
+        
         embed = discord.Embed(
             title="🎯 Bingo Completion Leaderboard",
-            description="Players with most bingo tiles completed",
+            description="Team standings by bingo completion",
             color=0x00FF00,
             timestamp=datetime.now()
         )
         
+        if not team_scores:
+            embed.add_field(
+                name="No Data", 
+                value="No team progress data available.", 
+                inline=False
+            )
+            return embed
+        
+        # Create leaderboard
+        leaderboard_text = ""
+        for i, score in enumerate(team_scores):
+            medal = self.get_medal(i)
+            progress_bar = self.create_progress_bar(score["completed"], score["total"], 10)
+            leaderboard_text += f"{medal} **{score['team']}**\n"
+            leaderboard_text += f"└ {progress_bar} **{score['completed']}/{score['total']}** tiles ({score['percentage']:.1f}%)\n\n"
         embed.add_field(
-            name="Coming Soon", 
-            value="Bingo completion tracking will be implemented soon!", 
+            name="Team Rankings",
+            value=leaderboard_text,
             inline=False
         )
-        embed.set_footer(text="🎯 Bingo Leaderboard • Use buttons to switch views")
         
+        embed.set_footer(text="🎯 Bingo Leaderboard • Use buttons to switch views")
         return embed
     
     async def create_activity_leaderboard(self) -> discord.Embed:
