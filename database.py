@@ -121,6 +121,28 @@ class DatabaseManager:
                 FOREIGN KEY (hold_by) REFERENCES users(discord_id)
             );
 
+            -- WOM player data table - stores synced data from WiseOldMan API
+            CREATE TABLE IF NOT EXISTS wom_player_data (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                rsn TEXT NOT NULL UNIQUE,
+                skills_data TEXT, -- JSON string of skills data
+                bosses_data TEXT, -- JSON string of bosses data
+                clues_data TEXT, -- JSON string of clues data
+                activities_data TEXT, -- JSON string of activities data
+                last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            -- WOM sync configuration table
+            CREATE TABLE IF NOT EXISTS wom_sync_config (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                rsns TEXT NOT NULL, -- JSON array of RSNs to sync
+                auto_sync_enabled BOOLEAN DEFAULT FALSE,
+                last_sync TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
             -- Bingo-specific indexes
             CREATE INDEX IF NOT EXISTS idx_bingo_tiles_index ON bingo_tiles(tile_index);
             CREATE INDEX IF NOT EXISTS idx_bingo_team_progress_team ON bingo_team_progress(team_name);
@@ -132,6 +154,10 @@ class DatabaseManager:
             CREATE INDEX IF NOT EXISTS idx_bingo_submissions_status ON bingo_submissions(status);
             CREATE INDEX IF NOT EXISTS idx_bingo_submissions_submitted ON bingo_submissions(submitted_at);
             CREATE INDEX IF NOT EXISTS idx_bingo_tile_drops_tile ON bingo_tile_drops(tile_id);
+            
+            -- WOM-specific indexes
+            CREATE INDEX IF NOT EXISTS idx_wom_player_data_rsn ON wom_player_data(rsn);
+            CREATE INDEX IF NOT EXISTS idx_wom_player_data_updated ON wom_player_data(last_updated);
             """
             conn.executescript(bingo_schema)
             conn.commit()
@@ -876,3 +902,139 @@ class DatabaseManager:
                 ORDER BY created_at DESC
             """, (user_id, archived))
             return [dict(row) for row in cursor.fetchall()] 
+
+    # ===== WOM DATA METHODS =====
+    
+    def store_wom_player_data(self, player_data: Dict) -> bool:
+        """Store WOM player data in the database"""
+        try:
+            import json
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                rsn = player_data['rsn']
+                skills_data = json.dumps(player_data.get('skills', []))
+                bosses_data = json.dumps(player_data.get('bosses', []))
+                clues_data = json.dumps(player_data.get('clues', []))
+                activities_data = json.dumps(player_data.get('activities', []))
+                
+                cursor.execute("""
+                    INSERT OR REPLACE INTO wom_player_data 
+                    (rsn, skills_data, bosses_data, clues_data, activities_data, last_updated)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (rsn, skills_data, bosses_data, clues_data, activities_data, datetime.now()))
+                
+                conn.commit()
+                logger.info(f"Stored WOM data for {rsn}")
+                return True
+        except Exception as e:
+            logger.error(f"Error storing WOM player data: {e}")
+            return False
+    
+    def get_wom_player_data(self, rsn: str) -> Optional[Dict]:
+        """Get WOM player data from the database"""
+        try:
+            import json
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT rsn, skills_data, bosses_data, clues_data, activities_data, last_updated
+                    FROM wom_player_data WHERE rsn = ?
+                """, (rsn,))
+                
+                row = cursor.fetchone()
+                if row:
+                    return {
+                        'rsn': row['rsn'],
+                        'skills': json.loads(row['skills_data']) if row['skills_data'] else [],
+                        'bosses': json.loads(row['bosses_data']) if row['bosses_data'] else [],
+                        'clues': json.loads(row['clues_data']) if row['clues_data'] else [],
+                        'activities': json.loads(row['activities_data']) if row['activities_data'] else [],
+                        'last_updated': row['last_updated']
+                    }
+                return None
+        except Exception as e:
+            logger.error(f"Error getting WOM player data: {e}")
+            return None
+    
+    def get_wom_sync_status(self) -> Optional[Dict]:
+        """Get WOM sync status and statistics"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Get player count
+                cursor.execute("SELECT COUNT(*) as count FROM wom_player_data")
+                player_count = cursor.fetchone()['count']
+                
+                # Get last sync time
+                cursor.execute("SELECT MAX(last_updated) as last_sync FROM wom_player_data")
+                last_sync = cursor.fetchone()['last_sync']
+                
+                # Get sync config
+                cursor.execute("SELECT * FROM wom_sync_config ORDER BY id DESC LIMIT 1")
+                config_row = cursor.fetchone()
+                
+                # Get recent updates
+                cursor.execute("""
+                    SELECT rsn, last_updated FROM wom_player_data 
+                    ORDER BY last_updated DESC LIMIT 5
+                """)
+                recent_updates = [dict(row) for row in cursor.fetchall()]
+                
+                return {
+                    'player_count': player_count,
+                    'last_sync': last_sync,
+                    'auto_sync': config_row['auto_sync_enabled'] if config_row else False,
+                    'recent_updates': recent_updates
+                }
+        except Exception as e:
+            logger.error(f"Error getting WOM sync status: {e}")
+            return None
+    
+    def set_auto_sync_config(self, rsns: List[str], enabled: bool) -> bool:
+        """Set WOM sync configuration"""
+        try:
+            import json
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                rsns_json = json.dumps(rsns)
+                cursor.execute("""
+                    INSERT OR REPLACE INTO wom_sync_config 
+                    (rsns, auto_sync_enabled, updated_at)
+                    VALUES (?, ?, ?)
+                """, (rsns_json, enabled, datetime.now()))
+                
+                conn.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Error setting auto-sync config: {e}")
+            return False
+    
+    def update_auto_sync_last_run(self) -> bool:
+        """Update the last sync time for auto-sync"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    UPDATE wom_sync_config 
+                    SET last_sync = ? 
+                    WHERE id = (SELECT MAX(id) FROM wom_sync_config)
+                """, (datetime.now(),))
+                conn.commit()
+                return True
+        except Exception as e:
+            logger.error(f"Error updating auto-sync last run: {e}")
+            return False
+    
+    def get_all_wom_players(self) -> List[str]:
+        """Get all RSNs that have WOM data"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT rsn FROM wom_player_data ORDER BY last_updated DESC")
+                return [row['rsn'] for row in cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"Error getting WOM players: {e}")
+            return [] 

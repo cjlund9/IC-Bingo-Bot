@@ -363,27 +363,41 @@ class LeaderboardView(discord.ui.View):
     async def create_wom_leaderboard_embed(self) -> discord.Embed:
         if not self.selected_metric_type or not self.selected_metric:
             return await self.create_points_leaderboard()
-        # Example user list - replace with your actual user list
-        users = [
-            {"rsn": "User1", "display_name": "User1"},
-            {"rsn": "User2", "display_name": "User2"},
-            {"rsn": "User3", "display_name": "User3"},
-        ]
+        
+        # Get all players with WOM data from database
+        wom_players = self.db.get_all_wom_players()
+        
+        if not wom_players:
+            embed = discord.Embed(
+                title="🔍 WOM Leaderboard",
+                description="No WOM data available. Use `/womsync` to sync player data first.",
+                color=0x9B59B6,
+                timestamp=datetime.now()
+            )
+            embed.set_footer(text="🔍 WOM Leaderboard • Use /womsync to add players")
+            return embed
+        
         leaderboard = []
-        for user in users:
-            value = await self.get_wom_metric(user["rsn"], self.selected_metric_type, self.selected_metric)
-            leaderboard.append({"rsn": user["rsn"], "display_name": user["display_name"], "value": value})
+        for rsn in wom_players:
+            player_data = self.db.get_wom_player_data(rsn)
+            if player_data:
+                value = self.get_metric_value_from_stored_data(player_data, self.selected_metric_type, self.selected_metric)
+                leaderboard.append({"rsn": rsn, "display_name": rsn, "value": value})
+        
         leaderboard.sort(key=lambda x: x["value"], reverse=True)
         metric_display = self.selected_metric.replace('-', ' ').title()
+        
         embed = discord.Embed(
             title=f"🔍 WOM {metric_display} Leaderboard",
-            description=f"Top players by {self.selected_metric_type}",
+            description=f"Top players by {self.selected_metric_type} (from stored data)",
             color=0x9B59B6,
             timestamp=datetime.now()
         )
+        
         if not leaderboard:
-            embed.add_field(name="No Data", value="No data available.", inline=False)
+            embed.add_field(name="No Data", value="No data available for this metric.", inline=False)
             return embed
+        
         leaderboard_text = ""
         for i, entry in enumerate(leaderboard[:10]):
             medal = self.get_medal(i)
@@ -394,7 +408,7 @@ class LeaderboardView(discord.ui.View):
                 value_str = str(value)
             leaderboard_text += f"{medal} **{entry['display_name']}**: {value_str}\n"
         embed.add_field(name="Rankings", value=leaderboard_text, inline=False)
-        embed.set_footer(text=f"🔍 WOM {metric_display} • Use buttons to switch views")
+        embed.set_footer(text=f"🔍 WOM {metric_display} • Use buttons to switch views • Data from /womsync")
         return embed
 
     def get_medal(self, position: int) -> str:
@@ -451,26 +465,62 @@ class LeaderboardView(discord.ui.View):
             {"display_name": "3rd User", "activity_count": 8}
         ]
 
-    async def get_wom_metric(self, rsn, metric_type, metric):
-        url = f"https://api.wiseoldman.net/v2/players/{rsn}/hiscores"
+    def get_metric_value_from_stored_data(self, player_data: Dict, metric_type: str, metric: str) -> int:
+        """Get metric value from stored WOM data"""
         try:
-            resp = requests.get(url, timeout=5)
-            if resp.status_code == 200:
-                data = resp.json()
-                if metric_type == "boss":
-                    for b in data.get("bosses", []):
-                        if b["metric"].lower() == metric.lower():
-                            return b["value"]
-                elif metric_type == "skill":
-                    for s in data.get("skills", []):
-                        if s["metric"].lower() == metric.lower():
-                            return s["experience"]
-                elif metric_type == "clue":
-                    for c in data.get("clues", []):
-                        if c["metric"].lower() == metric.lower():
-                            return c["value"]
+            if metric_type == "boss":
+                for boss in player_data.get("bosses", []):
+                    if boss.get("metric", "").lower() == metric.lower():
+                        return boss.get("value", 0)
+            elif metric_type == "skill":
+                for skill in player_data.get("skills", []):
+                    if skill.get("metric", "").lower() == metric.lower():
+                        return skill.get("experience", 0)
+            elif metric_type == "clue":
+                for clue in player_data.get("clues", []):
+                    if clue.get("metric", "").lower() == metric.lower():
+                        return clue.get("value", 0)
+            elif metric_type == "activity":
+                for activity in player_data.get("activities", []):
+                    if activity.get("metric", "").lower() == metric.lower():
+                        return activity.get("value", 0)
+            elif metric_type == "virtual":
+                # Handle virtual metrics like ehp, ehb
+                if metric.lower() == "ehp":
+                    # Calculate EHP from skills data
+                    return self.calculate_ehp_from_skills(player_data.get("skills", []))
+                elif metric.lower() == "ehb":
+                    # Calculate EHB from bosses data
+                    return self.calculate_ehb_from_bosses(player_data.get("bosses", []))
             return 0
-        except Exception:
+        except Exception as e:
+            logger.error(f"Error getting metric value from stored data: {e}")
+            return 0
+
+    def calculate_ehp_from_skills(self, skills_data: List[Dict]) -> int:
+        """Calculate EHP from skills data (simplified calculation)"""
+        try:
+            total_ehp = 0
+            for skill in skills_data:
+                if skill.get("metric") == "overall":
+                    # Use overall experience as a proxy for EHP
+                    total_ehp = skill.get("experience", 0) // 1000 # Convert to millions
+                    break
+            return total_ehp
+        except Exception as e:
+            logger.error(f"Error calculating EHP: {e}")
+            return 0
+
+    def calculate_ehb_from_bosses(self, bosses_data: List[Dict]) -> int:
+        """Calculate EHB from bosses data (simplified calculation)"""
+        try:
+            total_ehb = 0
+            for boss in bosses_data:
+                # Add up boss kills as a proxy for EHB
+                total_ehb += boss.get("value", 0)
+            return total_ehb
+        except Exception as e:
+            logger.error(f"Error calculating EHB: {e}")
             return 0
 
 def setup_leaderboard_commands(bot: Bot):

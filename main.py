@@ -30,6 +30,7 @@ from commands.stats import setup_stats_command
 from commands.leaderboard_cmd import setup_leaderboard_commands
 from commands.shop_cmd import setup_shop_commands
 from commands.monitor import setup_monitor_command
+from commands.wom_sync import setup_wom_sync_commands
 
 
 # Import utilities
@@ -236,6 +237,7 @@ async def main():
         setup_leaderboard_commands(bot)
         setup_shop_commands(bot)
         setup_monitor_command(bot)
+        setup_wom_sync_commands(bot)
 
         
         logger.info("✅ Application commands registered successfully")
