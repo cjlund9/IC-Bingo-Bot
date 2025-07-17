@@ -10,6 +10,8 @@ from storage import get_team_progress, get_tile_progress
 from datetime import datetime, timedelta
 import requests
 
+logger = logging.getLogger(__name__)
+
 # Static lists for demonstration (can be expanded or fetched from WOM API)
 BOSSES = [
     "zulrah", "vorkath", "cerberus", "alchemical-hydra", "chambers-of-xeric", "theatre-of-blood", "nex", "general-graardor", "kree'arra", "kril-tsutsaroth", "commander-zilyana", "giant-mole", "kalphite-queen", "king-black-dragon", "sarachnis", "skotizo", "venenatis", "vetion", "callisto", "chaos-elemental", "chaos-fanatic", "crazy-archaeologist", "scorpia", "deranged-archaeologist", "barrows-chests"
