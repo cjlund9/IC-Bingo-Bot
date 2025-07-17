@@ -26,16 +26,23 @@ CLUES = [
 class WOMMetricDropdown(discord.ui.Select):
     def __init__(self, parent_view):
         options = []
-        # Group: Bosses (limit to10t popular)
-        popular_bosses = ["zulrah", "vorkath", "cerberus", "alchemical-hydra", "chambers-of-xeric", "theatre-of-blood", "nex", "general-graardor", "kree'arra", "kril-tsutsaroth"]
-        for boss in popular_bosses:
+        # Up to 25 bosses
+        boss_list = [
+            "zulrah", "vorkath", "cerberus", "alchemical-hydra", "chambers-of-xeric", "theatre-of-blood", "nex", "general-graardor", "kree'arra", "kril-tsutsaroth", "commander-zilyana", "giant-mole", "kalphite-queen", "king-black-dragon", "sarachnis", "skotizo", "venenatis", "vetion", "callisto", "chaos-elemental", "chaos-fanatic", "crazy-archaeologist", "scorpia", "deranged-archaeologist", "barrows-chests", "grotesque-guardians"
+        ][:25]
+        for boss in boss_list:
             options.append(discord.SelectOption(label=boss.replace("-", " ").title(), value=f"boss:{boss}", description="Boss KC"))
-        # Group: Skills (limit to10t popular)
-        popular_skills = ["overall", "slayer", "agility", "thieving", "farming", "runecraft", "hunter", "construction", "mining", "fishing"]
-        for skill in popular_skills:
+        # Up to 25 skills, but only if room
+        max_skills = max(0, 25 - len(options))
+        skill_list = [
+            "overall", "attack", "defence", "strength", "hitpoints", "ranged", "prayer", "magic", "cooking", "woodcutting", "fletching", "fishing", "firemaking", "crafting", "smithing", "mining", "herblore", "agility", "thieving", "slayer", "farming", "runecraft", "hunter", "construction"
+        ][:max_skills]
+        for skill in skill_list:
             options.append(discord.SelectOption(label=skill.title(), value=f"skill:{skill}", description="Skill XP/Level"))
-        # Group: Clues (all 7)
-        for clue in CLUES:
+        # Add clues if still room
+        max_clues = max(0, 25 - len(options))
+        clue_list = ["all", "beginner", "easy", "medium", "hard", "elite", "master"][:max_clues]
+        for clue in clue_list:
             options.append(discord.SelectOption(label=f"Clue: {clue.title()}", value=f"clue:{clue}", description="Clue Count"))
         super().__init__(placeholder="Select a metric (Boss, Skill, Clue)", min_values=1, max_values=1, options=options)
         self.parent_view = parent_view
