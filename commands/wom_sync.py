@@ -8,12 +8,14 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 import requests
 from database import DatabaseManager
+import config
 
 logger = logging.getLogger(__name__)
 
 # WOM API rate limiting
 WOM_COOLDOWN = 5  # seconds between API calls
-wom_last_call =0wom_lock = asyncio.Lock()
+wom_last_call = 0
+wom_lock = asyncio.Lock()
 
 # Auto-sync configuration
 AUTO_SYNC_INTERVAL = 300  #5nutes between sync loops
@@ -171,7 +173,7 @@ def setup_wom_sync_commands(bot: Bot):
     @bot.tree.command(
         name="womsync",
         description="Sync player data from WiseOldMan API to local database",
-        guild=discord.Object(id=1344457562535497779)
+        guild=discord.Object(id=config.GUILD_ID)
     )
     @app_commands.describe(
         rsns="Comma-separated list of RSNs to sync (e.g., zezima,lynx titan')",
@@ -255,7 +257,7 @@ def setup_wom_sync_commands(bot: Bot):
     @bot.tree.command(
         name="womstatus",
         description="Check the status of WOM data sync",
-        guild=discord.Object(id=1344457562535497779)
+        guild=discord.Object(id=config.GUILD_ID)
     )
     async def wom_status_cmd(interaction: Interaction):
         # Check if user has administrator permissions
@@ -308,7 +310,7 @@ def setup_wom_sync_commands(bot: Bot):
     @bot.tree.command(
         name="womautostart",
         description="Start the background auto-sync task",
-        guild=discord.Object(id=1344457562535497779)
+        guild=discord.Object(id=config.GUILD_ID)
     )
     async def wom_auto_start_cmd(interaction: Interaction):
         # Check if user has administrator permissions
@@ -333,7 +335,7 @@ def setup_wom_sync_commands(bot: Bot):
     @bot.tree.command(
         name="womautostop",
         description="Stop the background auto-sync task",
-        guild=discord.Object(id=1344457562535497779)
+        guild=discord.Object(id=config.GUILD_ID)
     )
     async def wom_auto_stop_cmd(interaction: Interaction):
         # Check if user has administrator permissions
