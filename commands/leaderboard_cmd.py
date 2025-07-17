@@ -26,13 +26,15 @@ CLUES = [
 class WOMMetricDropdown(discord.ui.Select):
     def __init__(self, parent_view):
         options = []
-        # Group: Bosses
-        for boss in BOSSES:
+        # Group: Bosses (limit to10t popular)
+        popular_bosses = ["zulrah", "vorkath", "cerberus", "alchemical-hydra", "chambers-of-xeric", "theatre-of-blood", "nex", "general-graardor", "kree'arra", "kril-tsutsaroth"]
+        for boss in popular_bosses:
             options.append(discord.SelectOption(label=boss.replace("-", " ").title(), value=f"boss:{boss}", description="Boss KC"))
-        # Group: Skills
-        for skill in SKILLS:
+        # Group: Skills (limit to10t popular)
+        popular_skills = ["overall", "slayer", "agility", "thieving", "farming", "runecraft", "hunter", "construction", "mining", "fishing"]
+        for skill in popular_skills:
             options.append(discord.SelectOption(label=skill.title(), value=f"skill:{skill}", description="Skill XP/Level"))
-        # Group: Clues
+        # Group: Clues (all 7)
         for clue in CLUES:
             options.append(discord.SelectOption(label=f"Clue: {clue.title()}", value=f"clue:{clue}", description="Clue Count"))
         super().__init__(placeholder="Select a metric (Boss, Skill, Clue)", min_values=1, max_values=1, options=options)
