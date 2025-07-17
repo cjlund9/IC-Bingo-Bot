@@ -21,9 +21,23 @@ wom_lock = asyncio.Lock()
 AUTO_SYNC_INTERVAL = 300  #5nutes between sync loops
 PLAYER_SYNC_INTERVAL = 5  #5ds between players
 
+async def get_bingo_role_rsns(guild: discord.Guild) -> List[str]:
+    """Get RSNs (nick or username) for all members with the 'Summer 2025 Bingo' role."""
+    role = discord.utils.get(guild.roles, name="Summer 2025 Bingo")
+    if not role:
+        return []
+    rsns = []
+    for member in role.members:
+        if not member.bot:
+            rsn = member.nick or member.name
+            if rsn:
+                rsns.append(rsn)
+    return rsns
+
 class WOMDataSync:
-    def __init__(self, db: DatabaseManager):
+    def __init__(self, db: DatabaseManager, bot: Bot):
         self.db = db
+        self.bot = bot
         self.sync_in_progress = False
         self.auto_sync_task = None
         self.auto_sync_enabled = False
@@ -51,11 +65,16 @@ class WOMDataSync:
             try:
                 logger.info("Starting auto-sync loop")
 
-                # Get list of players to sync
-                players_to_sync = self.db.get_all_wom_players()
+                # Get list of players to sync from Discord role
+                for guild in self.bot.guilds:
+                    if guild.id == config.GUILD_ID:
+                        players_to_sync = await get_bingo_role_rsns(guild)
+                        break
+                else:
+                    players_to_sync = []
 
                 if not players_to_sync:
-                    logger.info("No players configured for auto-sync")
+                    logger.info("No players with 'Summer 2025 Bingo' role found for auto-sync")
                     await asyncio.sleep(AUTO_SYNC_INTERVAL)
                     continue
 
@@ -168,7 +187,7 @@ def setup_wom_sync_commands(bot: Bot):
 
     # Initialize the sync instance
     db = DatabaseManager()
-    wom_sync_instance = WOMDataSync(db)
+    wom_sync_instance = WOMDataSync(db, bot)
 
     @bot.tree.command(
         name="womsync",
@@ -176,10 +195,10 @@ def setup_wom_sync_commands(bot: Bot):
         guild=discord.Object(id=config.GUILD_ID)
     )
     @app_commands.describe(
-        rsns="Comma-separated list of RSNs to sync (e.g., zezima,lynx titan')",
+        rsns="Comma-separated list of RSNs to sync (leave blank to sync all with the Summer 2025 Bingo role)",
         auto_sync="Enable automatic sync every5minutes"
     )
-    async def wom_sync_cmd(interaction: Interaction, rsns: str, auto_sync: bool = False):
+    async def wom_sync_cmd(interaction: Interaction, rsns: Optional[str] = None, auto_sync: bool = False):
         # Check if user has administrator permissions
         if not interaction.user.guild_permissions.administrator:
             await interaction.response.send_message("❌ This command requires administrator permissions.", ephemeral=True)
@@ -188,17 +207,22 @@ def setup_wom_sync_commands(bot: Bot):
         await interaction.response.defer()
         
         try:
-            # Parse RSNs
-            rsn_list = [rsn.strip() for rsn in rsns.split(',') if rsn.strip()]
+            # If no RSNs provided, sync all with the bingo role
+            if not rsns:
+                rsn_list = await get_bingo_role_rsns(interaction.guild)
+                if not rsn_list:
+                    await interaction.followup.send("❌ No members with the 'Summer 2025 Bingo' role found.")
+                    return
+            else:
+                rsn_list = [rsn.strip() for rsn in rsns.split(',') if rsn.strip()]
+                if not rsn_list:
+                    await interaction.followup.send("❌ Please provide at least one RSN to sync.")
+                    return
             
-            if not rsn_list:
-                await interaction.followup.send("❌ Please provide at least one RSN to sync.")
+            if len(rsn_list) > 50:
+                await interaction.followup.send("❌ Maximum 50 players can be synced at once.")
                 return
-            
-            if len(rsn_list) > 10:
-                await interaction.followup.send("❌ Maximum10players can be synced at once.")
-                return
-            
+
             # Check if sync is already in progress
             if wom_sync_instance.sync_in_progress:
                 await interaction.followup.send("❌ A sync is already in progress. Please wait.")
@@ -210,50 +234,15 @@ def setup_wom_sync_commands(bot: Bot):
             
             results = await wom_sync_instance.sync_multiple_players(rsn_list)
             
-            # Process results
-            successful = [r for r in results if r['success']]
-            failed = [r for r in results if not r['success']]
-            
-            # Create result embed
-            embed = discord.Embed(
-                title="🌐 WOM Data Sync Results",
-                description=f"Synced {len(rsn_list)} players from WiseOldMan API",
-                color=0x00FF00 if successful else 0xFF0000,
-                timestamp=datetime.now()
-            )
-            
-            if successful:
-                success_text = "\n".join([
-                    f"✅ **{r['rsn']}**: {r['skills_count']} skills, {r['bosses_count']} bosses"
-                    for r in successful
-                ])
-                embed.add_field(name="✅ Successful", value=success_text, inline=False)
-            
-            if failed:
-                fail_text = "\n".join([
-                    f"❌ **{r['rsn']}**: {r.get('error', 'Unknown error')}"
-                    for r in failed
-                ])
-                embed.add_field(name="❌ Failed", value=fail_text, inline=False)
-            
-            embed.set_footer(text=f"🌐 WOM Sync • {len(successful)}/{len(rsn_list)} successful")
-            
-            await interaction.followup.send(embed=embed)
-            
-            # Set up auto-sync if requested
-            if auto_sync and successful:
-                # Store auto-sync configuration
-                db.set_auto_sync_config(rsn_list, enabled=True)
-                await wom_sync_instance.start_auto_sync()
-                await interaction.followup.send("🔄 Auto-sync enabled! Data will be updated every 5 minutes.")
-            
+            success_count = sum(1 for r in results if r.get('success'))
+            fail_count = len(results) - success_count
+            await interaction.followup.send(f"✅ WOM sync complete! Success: {success_count}, Failed: {fail_count}")
+            wom_sync_instance.sync_in_progress = False
         except Exception as e:
-            logger.error(f"Error in WOM sync command: {e}")
-            await interaction.followup.send(f"❌ An error occurred during sync: {e}")
-        finally:
-            if wom_sync_instance:
-                wom_sync_instance.sync_in_progress = False
-    
+            wom_sync_instance.sync_in_progress = False
+            logger.error(f"Error in womsync command: {e}")
+            await interaction.followup.send(f"❌ Error during WOM sync: {e}")
+
     @bot.tree.command(
         name="womstatus",
         description="Check the status of WOM data sync",
