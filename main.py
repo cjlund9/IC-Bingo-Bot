@@ -234,10 +234,10 @@ async def main():
         setup_sync_command(bot)
         setup_teams_consolidated_command(bot)
         setup_stats_command(bot)
-        setup_leaderboard_commands(bot)
-        setup_shop_commands(bot)
+        # setup_leaderboard_commands(bot)  # Temporarily disabled
+        # setup_shop_commands(bot)  # Temporarily disabled
         setup_monitor_command(bot)
-        setup_wom_sync_commands(bot)
+        # setup_wom_sync_commands(bot)  # Temporarily disabled
 
         
         logger.info("✅ Application commands registered successfully")
