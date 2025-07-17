@@ -4,13 +4,48 @@ from discord.ext.commands import Bot
 import logging
 from typing import Optional
 
-from config import GUILD_ID, TEAM_ROLES, DEFAULT_TEAM, ADMIN_ROLE, EVENT_COORDINATOR_ROLE
+from config import GUILD_ID, TEAM_ROLES, DEFAULT_TEAM, ADMIN_ROLE, EVENT_COORDINATOR_ROLE, load_placeholders
 from storage import get_tile_progress, get_team_progress
 from views.submission_management import SubmissionManagementView, SubmissionRemovalView
 from utils.access import bot_access_check
-from config import load_placeholders
 
 logger = logging.getLogger(__name__)
+
+# Autocomplete for tile selection
+async def tile_autocomplete(interaction: Interaction, current: str):
+    placeholders = load_placeholders()
+    choices = []
+    
+    for i, t in enumerate(placeholders):
+        # Calculate tile coordinates (A1, A2, etc.)
+        row = i // 10  # 10x10 board
+        col = i % 10
+        row_letter = chr(65 + row)  # A=65, B=66, etc.
+        col_number = col + 1  # 1-based column numbers
+        tile_indicator = f"{row_letter}{col_number}"
+        # Create display name with indicator
+        display_name = f"{tile_indicator}: {t['name']}"
+        # Check if current input matches either the indicator or the tile name
+        if (current.lower() in display_name.lower() or 
+            current.lower() in tile_indicator.lower() or 
+            current.lower() in t['name'].lower()):
+            choices.append(app_commands.Choice(name=display_name, value=str(i)))
+    
+    return choices[:25]
+
+# Autocomplete for team selection
+async def team_autocomplete(interaction: Interaction, current: str):
+    choices = []
+    # Add all team roles
+    for team in TEAM_ROLES:
+        if current.lower() in team.lower():
+            choices.append(app_commands.Choice(name=team, value=team))
+    
+    # Add all" team option
+    if current.lower() in DEFAULT_TEAM.lower():
+        choices.append(app_commands.Choice(name=DEFAULT_TEAM.capitalize(), value=DEFAULT_TEAM))
+    
+    return choices[:25]
 
 def create_management_embed(team: str, tile_index: int) -> discord.Embed:
     """Create a Discord embed for managing a specific tile"""
@@ -102,6 +137,7 @@ def setup_manage_command(bot: Bot):
         team="Team to manage (optional, defaults to your team)",
         tile="Tile index or name to manage"
     )
+    @app_commands.autocomplete(tile=tile_autocomplete, team=team_autocomplete)
     async def manage_cmd(interaction: Interaction, tile: str, team: Optional[str] = None):
         try:
             # Check permissions - only leadership and event coordinators can manage
@@ -133,22 +169,15 @@ def setup_manage_command(bot: Bot):
                     )
                     return
 
-            # --- Tile index or name resolution ---
+            # --- Tile index resolution ---
             placeholders = load_placeholders()
-            tile_index = None
-            # Try to interpret as integer index
             try:
                 tile_index = int(tile)
+                if tile_index < 0 or tile_index >= len(placeholders):
+                    raise ValueError("Tile index out of range")
             except (ValueError, TypeError):
-                # Try to match by name (case-insensitive, exact match)
-                for idx, t in enumerate(placeholders):
-                    if t.get("name", "").strip().lower() == str(tile).strip().lower():
-                        tile_index = idx
-                        break
-            if tile_index is None or tile_index < 0 or tile_index >= len(placeholders):
-                valid_names = [t.get("name", f"Tile {i}") for i, t in enumerate(placeholders)]
                 await interaction.response.send_message(
-                    f"❌ Invalid tile '{tile}'. Please use a valid tile index or name.\nValid names: {', '.join(valid_names[:15])}{'...' if len(valid_names) > 15 else ''}",
+                    f"❌ Invalid tile '{tile}'. Please select a valid tile from the autocomplete options.",
                     ephemeral=True
                 )
                 return
