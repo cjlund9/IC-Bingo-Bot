@@ -22,14 +22,17 @@ def get_tile_progress(team: str, tile_index: int) -> Dict[str, Any]:
         conn = get_db_conn()
         cursor = conn.cursor()
         # Get tile info
-        cursor.execute('SELECT name, drops_needed, drops_required FROM bingo_tiles WHERE id = ?', (tile_index,))
+        cursor.execute('SELECT name, drops_needed FROM bingo_tiles WHERE id = ?', (tile_index,))
         row = cursor.fetchone()
         if not row:
             conn.close()
             return {}
-        tile_name, total_required, drops_required_json = row
-        import json
-        drops_required = json.loads(drops_required_json) if drops_required_json else []
+        tile_name, total_required = row
+        
+        # Get drops required from bingo_tile_drops table
+        cursor.execute('SELECT drop_name FROM bingo_tile_drops WHERE tile_id = ?', (tile_index,))
+        drops_required = [row[0] for row in cursor.fetchall()]
+        
         # Get progress
         cursor.execute('''SELECT completed_count, total_required FROM bingo_team_progress WHERE team = ? AND tile_id = ?''', (team, tile_index))
         progress_row = cursor.fetchone()
@@ -53,6 +56,7 @@ def get_tile_progress(team: str, tile_index: int) -> Dict[str, Any]:
             "progress_percentage": progress_percentage,
             "is_complete": is_complete,
             "missing_drops": missing_drops,
+            "drops_required": drops_required
         }
     except Exception as e:
         logger.error(f"Error getting tile progress: {e}")
