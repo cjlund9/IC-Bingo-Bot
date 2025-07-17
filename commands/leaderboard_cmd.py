@@ -12,13 +12,25 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-# Static lists for WOM API metrics
+# Complete WOM metric lists
 BOSSES = [
-    "zulrah", "vorkath", "cerberus", "alchemical-hydra", "chambers-of-xeric", "theatre-of-blood", "nex", "general-graardor", "kree'arra", "kril-tsutsaroth", "commander-zilyana", "giant-mole", "kalphite-queen", "king-black-dragon", "sarachnis", "skotizo", "venenatis", "vetion", "callisto", "chaos-elemental", "chaos-fanatic", "crazy-archaeologist", "scorpia", "deranged-archaeologist", "barrows-chests", "grotesque-guardians", "abyssal-sire", "kraken", "thermonuclear-smoke-devil", "dusk", "dawn", "gargoyle", "aberrant-spectre", "nechryael", "bloodveld", "jelly", "dagannoth-rex", "dagannoth-prime", "dagannoth-supreme", "kalphite-queen", "kalphite-king", "kbd", "mole", "wyvern", "drakes", "wyrms", "hydra", "basilisk-knight", "basilisk", "kurask", "turoth", "spectre"
+    "abyssal-sire", "alchemical-hydra", "barrows-chests", "bryophyta", "callisto", "cerberus",
+    "chambers-of-xeric", "chambers-of-xeric-challenge-mode", "chaos-elemental", "chaos-fanatic",
+    "commander-zilyana", "corporeal-beast", "crazy-archaeologist", "dagannoth-prime",
+    "dagannoth-rex", "dagannoth-supreme", "deranged-archaeologist", "general-graardor",
+    "giant-mole", "grotesque-guardians", "hespori", "kalphite-queen", "king-black-dragon",
+    "kraken", "kree'arra", "kril-tsutsaroth", "mimic", "nightmare", "phosanis-nightmare",
+    "obor", "sarachnis", "scorpia", "skotizo", "tempoross", "the-gauntlet",
+    "the-corrupted-gauntlet", "theatre-of-blood", "theatre-of-blood-hard", "thermonuclear-smoke-devil",
+    "tzkal-zuk", "tztok-jad", "venenatis", "vetion", "vorkath", "wintertodt", "zalcano", "zulrah"
 ]
+
 SKILLS = [
-    "overall", "attack", "defence", "strength", "hitpoints", "ranged", "prayer", "magic", "cooking", "woodcutting", "fletching", "fishing", "firemaking", "crafting", "smithing", "mining", "herblore", "agility", "thieving", "slayer", "farming", "runecraft", "hunter", "construction"
+    "overall", "attack", "defence", "strength", "hitpoints", "ranged", "prayer", "magic",
+    "cooking", "woodcutting", "fletching", "fishing", "firemaking", "crafting", "smithing",
+    "mining", "herblore", "agility", "thieving", "slayer", "farming", "runecrafting", "hunter", "construction"
 ]
+
 CLUES = [
     "all", "beginner", "easy", "medium", "hard", "elite", "master"
 ]
@@ -27,7 +39,6 @@ class WOMMetricModal(discord.ui.Modal, title="Search WOM Metric"):
     def __init__(self, parent_view):
         super().__init__()
         self.parent_view = parent_view
-        
         self.metric_input = discord.ui.TextInput(
             label="Enter metric name (boss, skill, or clue)",
             placeholder="e.g., zulrah, slayer, master, etc.",
@@ -36,112 +47,97 @@ class WOMMetricModal(discord.ui.Modal, title="Search WOM Metric"):
             required=True
         )
         self.add_item(self.metric_input)
-    
+
     async def on_submit(self, interaction: discord.Interaction):
         user_input = self.metric_input.value.lower().strip()
-        
-        # Try to match the input to a metric
         metric_type, metric = self.find_metric(user_input)
-        
         if metric_type and metric:
             self.parent_view.selected_metric_type = metric_type
             self.parent_view.selected_metric = metric
             embed = await self.parent_view.create_wom_leaderboard_embed()
             await interaction.response.edit_message(embed=embed, view=self.parent_view)
         else:
-            # Show suggestions
             suggestions = self.get_suggestions(user_input)
             await interaction.response.send_message(
-                f"❌ Metric {user_input} not found.\n\n**Suggestions:**\n{suggestions}\n",
-                ephemeral=True
+                f"❌ Metric {user_input} not found.\n\n**Suggestions:**\n{suggestions}", ephemeral=True
             )
-    
+
     def find_metric(self, user_input: str) -> tuple:
-        # The best matching metric from user input
         # Check bosses
         for boss in BOSSES:
             if user_input in boss.lower() or boss.lower() in user_input:
                 return "boss", boss
-        
         # Check skills
         for skill in SKILLS:
             if user_input in skill.lower() or skill.lower() in user_input:
                 return "skill", skill
-        
         # Check clues
         for clue in CLUES:
             if user_input in clue.lower() or clue.lower() in user_input:
                 return "clue", clue
-        
         return None, None
-    
+
     def get_suggestions(self, user_input: str) -> str:
         suggestions = []
-        
-        # Find partial matches
-        for boss in BOSSES[:10]:  # Limit suggestions
+        for boss in BOSSES[:10]:
             if user_input in boss.lower():
                 suggestions.append(f"• Boss: {boss.replace('-', ' ').title()}")
-        
         for skill in SKILLS[:5]:
             if user_input in skill.lower():
                 suggestions.append(f"• Skill: {skill.title()}")
-        
         for clue in CLUES:
             if user_input in clue.lower():
                 suggestions.append(f"• Clue: {clue.title()}")
-        
         if not suggestions:
             suggestions = [
-                "• Popular bosses: zulrah, vorkath, cerberus,",
-                "• Popular skills: slayer, agility, thieving,",
+                "• Popular bosses: zulrah, vorkath, cerberus",
+                "• Popular skills: slayer, agility, thieving",
                 "• Clues: all, beginner, easy, medium, hard, elite, master"
             ]
-        
-        return "\n".join(suggestions)  # Limit to 8 suggestions
+        return '\n'.join(suggestions[:8])
 
 class LeaderboardView(discord.ui.View):
     def __init__(self, db: DatabaseManager):
-        super().__init__(timeout=300)  # 5es timeout
+        super().__init__(timeout=300)
         self.db = db
         self.current_page = 0
         self.leaderboard_type = "points"  # points, bingo, activity, team, wom
         self.selected_metric_type = None
         self.selected_metric = None
-        
+
     @discord.ui.button(label="🏆 Points", style=discord.ButtonStyle.primary, custom_id="points")
     async def points_button(self, interaction: Interaction, button: discord.ui.Button):
         self.leaderboard_type = "points"
-        self.selected_metric_type = None  # Clear WOM selection
+        self.selected_metric_type = None
         embed = await self.create_leaderboard_embed()
         await interaction.response.edit_message(embed=embed, view=self)
-        
+
     @discord.ui.button(label="🎯 Bingo", style=discord.ButtonStyle.primary, custom_id="bingo")
     async def bingo_button(self, interaction: Interaction, button: discord.ui.Button):
         self.leaderboard_type = "bingo"
-        self.selected_metric_type = None  # Clear WOM selection
+        self.selected_metric_type = None
         embed = await self.create_leaderboard_embed()
         await interaction.response.edit_message(embed=embed, view=self)
-        
+
     @discord.ui.button(label="⚡ Activity", style=discord.ButtonStyle.primary, custom_id="activity")
     async def activity_button(self, interaction: Interaction, button: discord.ui.Button):
         self.leaderboard_type = "activity"
-        self.selected_metric_type = None  # Clear WOM selection
+        self.selected_metric_type = None
         embed = await self.create_leaderboard_embed()
         await interaction.response.edit_message(embed=embed, view=self)
-        
+
     @discord.ui.button(label="👥 Teams", style=discord.ButtonStyle.primary, custom_id="teams")
     async def teams_button(self, interaction: Interaction, button: discord.ui.Button):
         self.leaderboard_type = "teams"
-        self.selected_metric_type = None  # Clear WOM selection
+        self.selected_metric_type = None
         embed = await self.create_leaderboard_embed()
         await interaction.response.edit_message(embed=embed, view=self)
-    
+
     @discord.ui.button(label="🔍 WOM Search", style=discord.ButtonStyle.secondary, custom_id="wom_search")
     async def wom_search_button(self, interaction: Interaction, button: discord.ui.Button):
         modal = WOMMetricModal(self)
         await interaction.response.send_modal(modal)
-    
+
     async def create_leaderboard_embed(self) -> discord.Embed:
         if self.selected_metric_type:
             return await self.create_wom_leaderboard_embed()
@@ -155,45 +151,33 @@ class LeaderboardView(discord.ui.View):
             return await self.create_team_leaderboard()
         else:
             return await self.create_points_leaderboard()
-    
+
     async def create_points_leaderboard(self) -> discord.Embed:
         leaderboard = self.db.get_leaderboard(limit=15)
-        
         embed = discord.Embed(
             title="🏆 Points Leaderboard",
             description="Top players by total points earned",
             color=0xFFD700,
             timestamp=datetime.now()
         )
-        
         if not leaderboard:
             embed.add_field(name="No Data", value="No players found.", inline=False)
             return embed
-        
         leaderboard_text = ""
         for i, user in enumerate(leaderboard):
-            # Get achievement badges
-            badges = self.get_achievement_badges(user['total_points'], user['team'])
-            
-            # Create progress bar for points (assuming max 1000 points for visual)
+            badges = self.get_achievement_badges(user['total_points'], user.get('team'))
             points = user['total_points']
-            progress_bar = self.create_progress_bar(points, 1000, 10)
-            # Format display name
-            display_name = user['display_name'] or user['username']
-            team_display = f"({user['team']})" if user['team'] else ""
-            
+            progress_bar = self.create_progress_bar(points, 1000)
+            display_name = user.get('display_name') or user['username']
+            team_display = f"({user['team']})" if user.get('team') else ""
             leaderboard_text += f"{self.get_medal(i)} **{display_name}** {team_display} {badges}\n"
             leaderboard_text += f"└ {progress_bar} **{points:,}** pts\n\n"
         embed.add_field(name="Rankings", value=leaderboard_text, inline=False)
         embed.set_footer(text="🏆 Points Leaderboard • Use buttons to switch views")
-        
         return embed
-    
+
     async def create_bingo_leaderboard(self) -> discord.Embed:
-        # Get real bingo completion data from database
         team_scores = []
-        
-        # Calculate scores for each team
         for team_role in TEAM_ROLES:
             team = team_role.lower()
             team_progress = get_team_progress(team)
@@ -202,31 +186,25 @@ class LeaderboardView(discord.ui.View):
                 total_tiles = team_progress.get("total_tiles", 0)
                 completion_percentage = team_progress.get("completion_percentage", 0)
                 team_scores.append({
-                   "team": team_role,
-                   "completed": completed_tiles,
-                   "total": total_tiles,
-                   "percentage": completion_percentage
+                    "team": team_role,
+                    "completed": completed_tiles,
+                    "total": total_tiles,
+                    "percentage": completion_percentage
                 })
-        
-        # Sort by completion percentage (descending)
         team_scores.sort(key=lambda x: x["percentage"], reverse=True)
-        
         embed = discord.Embed(
             title="🎯 Bingo Completion Leaderboard",
             description="Team standings by bingo completion",
             color=0x00FF00,
             timestamp=datetime.now()
         )
-        
         if not team_scores:
             embed.add_field(
-                name="No Data", 
-                value="No team progress data available.", 
+                name="No Data",
+                value="No team progress data available.",
                 inline=False
             )
             return embed
-        
-        # Create leaderboard
         leaderboard_text = ""
         for i, score in enumerate(team_scores):
             medal = self.get_medal(i)
@@ -238,42 +216,32 @@ class LeaderboardView(discord.ui.View):
             value=leaderboard_text,
             inline=False
         )
-        
         embed.set_footer(text="🎯 Bingo Leaderboard • Use buttons to switch views")
         return embed
-    
+
     async def create_activity_leaderboard(self) -> discord.Embed:
-        # This would need to be implemented based on your activity tracking
-        # For now, returning a sample
         recent_users = self.get_recent_activity_users()
-        
         embed = discord.Embed(
             title="⚡ Activity Leaderboard",
             description="Most active players (last 7 days)",
             color=0xFF6B6B,
             timestamp=datetime.now()
         )
-        
         if not recent_users:
             embed.add_field(name="No Recent Activity", value="No activity data available.", inline=False)
             return embed
-        
         activity_text = ""
         for i, user in enumerate(recent_users):
             badges = self.get_activity_badges(user['activity_count'])
-            display_name = user['display_name'] or user['username']
-            
+            display_name = user.get('display_name') or user.get('username', 'Unknown')
             activity_text += f"{self.get_medal(i)} **{display_name}** {badges}\n"
             activity_text += f"└ **{user['activity_count']}** actions this week\n\n"
         embed.add_field(name="Recent Activity", value=activity_text, inline=False)
         embed.set_footer(text="⚡ Activity Leaderboard • Use buttons to switch views")
-        
         return embed
-    
+
     async def create_team_leaderboard(self) -> discord.Embed:
         team_scores = []
-        
-        # Calculate scores for each team
         for team_role in TEAM_ROLES:
             team = team_role.lower()
             team_progress = get_team_progress(team)
@@ -281,75 +249,66 @@ class LeaderboardView(discord.ui.View):
                 completed_tiles = team_progress.get("completed_tiles", 0)
                 completion_percentage = team_progress.get("completion_percentage", 0)
                 team_scores.append({
-                   "team": team_role,
-                   "completed": completed_tiles,
-                   "percentage": completion_percentage
+                    "team": team_role,
+                    "completed": completed_tiles,
+                    "percentage": completion_percentage
                 })
-        
-        # Sort by completion percentage
         team_scores.sort(key=lambda x: x["percentage"], reverse=True)
-        
         embed = discord.Embed(
             title="👥 Team Leaderboard",
             description="Team standings by bingo completion",
             color=0x4ECDC4,
             timestamp=datetime.now()
         )
-        
         if not team_scores:
-            embed.add_field(name="No Data", value="No team progress data available.", inline=False)
+            embed.add_field(name="No Data", value="No team data available.", inline=False)
             return embed
-        
-        team_text = ""
+        leaderboard_text = ""
         for i, score in enumerate(team_scores):
             medal = self.get_medal(i)
-            progress_bar = self.create_progress_bar(score["percentage"], 100, 8)
-            
-            team_text += f"{medal} **{score['team']}**\n"
-            team_text += f"└ {progress_bar} **{score['completed']}** tiles ({score['percentage']:.1f}%)\n\n"
-        embed.add_field(name="Team Rankings", value=team_text, inline=False)
+            leaderboard_text += f"{medal} **{score['team']}**: {score['completed']} tiles ({score['percentage']:.1f}%)\n"
+        embed.add_field(name="Rankings", value=leaderboard_text, inline=False)
         embed.set_footer(text="👥 Team Leaderboard • Use buttons to switch views")
-        
         return embed
-    
+
     async def create_wom_leaderboard_embed(self) -> discord.Embed:
-        leaderboard = self.db.get_leaderboard(limit=30)
-        metric_type = self.selected_metric_type
-        metric = self.selected_metric
-        results = []
-        for user in leaderboard:
-            rsn = user['display_name'] or user['username']
-            value = await self.get_wom_metric(rsn, metric_type, metric)
-            results.append({
-                "rsn": rsn,
-                "value": value,
-                "team": user.get("team", ""),
-            })
-        results.sort(key=lambda x: x["value"], reverse=True)
-        # Title and description
-        if metric_type == "boss":
-            title = f"🏆 {metric.replace('-', ' ').title()} KC Leaderboard"
-            desc = f"Top {metric.replace('-', ' ').title()} kill counts (Wise Old Man API)"
-        elif metric_type == "skill":
-            title = f"🏆 {metric.title()} XP Leaderboard"
-            desc = f"Top {metric.title()} XP (Wise Old Man API)"
-        elif metric_type == "clue":
-            title = f"🏆 {metric.title()} Clue Leaderboard"
-            desc = f"Top {metric.title()} clues completed (Wise Old Man API)"
-        else:
-            title = "🏆 WOM Leaderboard"
-            desc = "Wise Old Man API Leaderboard"
-        embed = discord.Embed(title=title, description=desc, color=0x4ECDC4)
-        text = ""
-        for i, entry in enumerate(results[:15]):
+        if not self.selected_metric_type or not self.selected_metric:
+            return await self.create_points_leaderboard()
+        # Example user list - replace with your actual user list
+        users = [
+            {"rsn": "User1", "display_name": "User1"},
+            {"rsn": "User2", "display_name": "User2"},
+            {"rsn": "User3", "display_name": "User3"},
+        ]
+        leaderboard = []
+        for user in users:
+            value = await self.get_wom_metric(user["rsn"], self.selected_metric_type, self.selected_metric)
+            leaderboard.append({"rsn": user["rsn"], "display_name": user["display_name"], "value": value})
+        leaderboard.sort(key=lambda x: x["value"], reverse=True)
+        metric_display = self.selected_metric.replace('-', ' ').title()
+        embed = discord.Embed(
+            title=f"🔍 WOM {metric_display} Leaderboard",
+            description=f"Top players by {self.selected_metric_type}",
+            color=0x9B59B6,
+            timestamp=datetime.now()
+        )
+        if not leaderboard:
+            embed.add_field(name="No Data", value="No data available.", inline=False)
+            return embed
+        leaderboard_text = ""
+        for i, entry in enumerate(leaderboard[:10]):
             medal = self.get_medal(i)
-            text += f"{medal} **{entry['rsn']}** ({entry['team']}) — {entry['value']:,}\n"
-        embed.add_field(name="Rankings", value=text or "No data", inline=False)
-        embed.set_footer(text="Data from wiseoldman.net")
+            value = entry["value"]
+            if self.selected_metric_type == "skill":
+                value_str = f"{value:,}" if value > 0 else "0"
+            else:
+                value_str = str(value)
+            leaderboard_text += f"{medal} **{entry['display_name']}**: {value_str}\n"
+        embed.add_field(name="Rankings", value=leaderboard_text, inline=False)
+        embed.set_footer(text=f"🔍 WOM {metric_display} • Use buttons to switch views")
         return embed
 
     def get_medal(self, position: int) -> str:
-        # This would need to be implemented based on your medal emoji logic
         if position == 0:
             return "🥇"
         elif position == 1:
@@ -357,12 +316,10 @@ class LeaderboardView(discord.ui.View):
         elif position == 2:
             return "🥉"
         else:
-            return f"**{position + 1}.**"
-    
-    def get_achievement_badges(self, points: int, team: str) -> str:
+            return f"{position + 1}."
+
+    def get_achievement_badges(self, points: int, team: Optional[str]) -> str:
         badges = []
-        
-        # Points milestones
         if points >= 1000:
             badges.append("👑")
         elif points >= 500:
@@ -373,46 +330,36 @@ class LeaderboardView(discord.ui.View):
             badges.append("🎖️")
         elif points >= 50:
             badges.append("⭐")
-        
-        # Team badges (if you have specific team achievements)
         if team:
             badges.append("👥")
-        
-        return " ".join(badges)
-    
+        return "".join(badges)
+
     def get_activity_badges(self, activity_count: int) -> str:
         badges = []
-        
         if activity_count >= 50:
             badges.append("🔥")
-        elif activity_count >= 25:
+        elif activity_count >= 30:
             badges.append("⚡")
-        elif activity_count >= 10:
+        elif activity_count >= 20:
             badges.append("🚀")
-        elif activity_count >= 5:
+        elif activity_count >= 10:
             badges.append("💪")
-        
-        return " ".join(badges)
-    
+        return "".join(badges)
+
     def create_progress_bar(self, current: int, maximum: int, length: int = 10) -> str:
-        # This would need to be implemented based on your progress bar ASCII logic
         if maximum == 0:
             return "░" * length
-        
-        percentage = min(current / maximum, 1.0)
+        percentage = min(current / maximum, 1)
         filled = int(percentage * length)
         empty = length - filled
-        
         bar = "█" * filled + "░" * empty
         return bar
-    
+
     def get_recent_activity_users(self) -> List[Dict]:
-        # This would need to be implemented based on your activity tracking
-        # For now, returning a sample
         return [
             {"display_name": "Sample User", "activity_count": 15},
             {"display_name": "Another User", "activity_count": 12},
-            {"display_name": "d User", "activity_count": 8}
+            {"display_name": "3rd User", "activity_count": 8}
         ]
 
     async def get_wom_metric(self, rsn, metric_type, metric):
@@ -438,7 +385,6 @@ class LeaderboardView(discord.ui.View):
             return 0
 
 def setup_leaderboard_commands(bot: Bot):
-    
     @bot.tree.command(
         name="totalleaderboard",
         description="View the cool interactive total leaderboard",
@@ -446,157 +392,12 @@ def setup_leaderboard_commands(bot: Bot):
     )
     async def leaderboard_cmd(interaction: Interaction):
         await interaction.response.defer()
-        
         try:
             db = DatabaseManager()
             view = LeaderboardView(db)
             embed = await view.create_leaderboard_embed()
-            
             await interaction.followup.send(embed=embed, view=view)
             logger.info(f"Leaderboard viewed by {interaction.user.display_name}")
-            
         except Exception as e:
             logger.error(f"Error in leaderboard command: {e}")
-            await interaction.followup.send("❌ An error occurred while loading the leaderboard.")    
-    @bot.tree.command(
-        name="mystats",
-        description="View your personal statistics and points history",
-        guild=discord.Object(id=GUILD_ID)
-    )
-    async def mystats_cmd(interaction: Interaction):
-        await interaction.response.defer()
-        
-        try:
-            # Get or create user
-            db = DatabaseManager()
-            user = db.get_or_create_user(
-                interaction.user.id,
-                interaction.user.name,
-                interaction.user.display_name
-            )
-            
-            # Get detailed stats
-            stats = db.get_user_stats(interaction.user.id)
-            
-            if not stats:
-                await interaction.followup.send("❌ Unable to load your statistics.")
-                return
-            
-            # Create embed with cool visual elements
-            embed = discord.Embed(
-                title=f"📊 {interaction.user.display_name}'s Statistics",
-                color=0x00FF00,
-                timestamp=datetime.now()
-            )
-            
-            # User info with progress bar
-            points = user['total_points']
-            progress_bar = self.create_progress_bar(points, 1000)
-            badges = self.get_user_badges(points, user['team'])
-            
-            embed.add_field(
-                name="👤 User Info",
-                value=f"**Total Points:** {points:,}\n"
-                      f"**Team:** {user['team'] or None} {badges}\n"
-                      f"**Member Since:** {user['created_at'][:10]}\n"
-                      f"**Progress:** {progress_bar}",
-                inline=False
-            )
-            
-            # Competition stats
-            competitions = stats.get('competitions', [])
-            if competitions:
-                comp_text = ""
-                for comp in competitions[:5]:  # Show last 5
-                    comp_text += f"• {comp['competition_name']}: {comp['placement']}{_get_ordinal_suffix(comp['placement'])} ({comp['points_awarded']} pts)\n"
-                if len(competitions) > 5:
-                    comp_text += f"... and {len(competitions) - 5} more"
-            else:
-                comp_text = "No competitions yet"
-            
-            embed.add_field(
-                name="🏆 Competitions",
-                value=comp_text,
-                inline=True
-            )
-            
-            # CLOG stats
-            clogs = stats.get('clogs', [])
-            if clogs:
-                clog_text = ""
-                for clog in clogs[:3]:  # Show last 3
-                    clog_text += f"• {clog['tier_name']}: {clog['current_count']} items ({clog['points_awarded']} pts)\n"
-                if len(clogs) > 3:
-                    clog_text += f"... and {len(clogs) - 3} more"
-            else:
-                clog_text = "No CLOG submissions yet"
-            
-            embed.add_field(
-                name="📚 Collection Log",
-                value=clog_text,
-                inline=True
-            )
-            
-            # CA stats
-            cas = stats.get('cas', [])
-            if cas:
-                ca_text = ""
-                for ca in cas[:3]:  # Show last 3
-                    ca_text += f"• {ca['tier_name']}: {ca['points_awarded']} pts\n"
-                if len(cas) > 3:
-                    ca_text += f"... and {len(cas) - 3} more"
-            else:
-                ca_text = "No CA submissions yet"
-            
-            embed.add_field(
-                name="⚔️ Combat Achievements",
-                value=ca_text,
-                inline=True
-            )
-            
-            embed.set_footer(text=f"📊 Personal Statistics • {interaction.user.display_name}")
-            await interaction.followup.send(embed=embed)
-            logger.info(f"Stats viewed by {interaction.user.display_name}")
-            
-        except Exception as e:
-            logger.error(f"Error in mystats command: {e}")
-            await interaction.followup.send("❌ An error occurred while loading your statistics.")
-
-def create_progress_bar(current: int, maximum: int, length: int = 10) -> str:
-    if maximum == 0:
-        return "░" * length
-    
-    percentage = min(current / maximum, 1.0)
-    filled = int(percentage * length)
-    empty = length - filled
-    
-    bar = "█" * filled + "░" * empty
-    return bar
-
-def get_user_badges(points: int, team: str) -> str:
-    badges = []
-    
-    # Points milestones
-    if points >= 100:
-        badges.append("👑")
-    elif points >= 50:
-        badges.append("💎")
-    elif points >= 250:
-        badges.append("🏅")
-    elif points >= 100:
-        badges.append("🎖️")
-    elif points >= 50:
-        badges.append("⭐")
-    # Team badges
-    if team:
-        badges.append("👥")
-    
-    return " ".join(badges)
-
-def _get_ordinal_suffix(n: int) -> str:
-    """Get ordinal suffix for numbers (1st, 2nd, 3rd, etc.)"""
-    if 10 <= n % 100 <= 20:
-        suffix = 'th'
-    else:
-        suffix = {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')
-    return suffix 
+            await interaction.followup.send("❌ An error occurred while loading the leaderboard.") 
