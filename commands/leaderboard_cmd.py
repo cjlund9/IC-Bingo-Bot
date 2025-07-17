@@ -12,9 +12,9 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-# Static lists for demonstration (can be expanded or fetched from WOM API)
+# Static lists for WOM API metrics
 BOSSES = [
-    "zulrah", "vorkath", "cerberus", "alchemical-hydra", "chambers-of-xeric", "theatre-of-blood", "nex", "general-graardor", "kree'arra", "kril-tsutsaroth", "commander-zilyana", "giant-mole", "kalphite-queen", "king-black-dragon", "sarachnis", "skotizo", "venenatis", "vetion", "callisto", "chaos-elemental", "chaos-fanatic", "crazy-archaeologist", "scorpia", "deranged-archaeologist", "barrows-chests"
+    "zulrah", "vorkath", "cerberus", "alchemical-hydra", "chambers-of-xeric", "theatre-of-blood", "nex", "general-graardor", "kree'arra", "kril-tsutsaroth", "commander-zilyana", "giant-mole", "kalphite-queen", "king-black-dragon", "sarachnis", "skotizo", "venenatis", "vetion", "callisto", "chaos-elemental", "chaos-fanatic", "crazy-archaeologist", "scorpia", "deranged-archaeologist", "barrows-chests", "grotesque-guardians", "abyssal-sire", "kraken", "thermonuclear-smoke-devil", "dusk", "dawn", "gargoyle", "aberrant-spectre", "nechryael", "bloodveld", "jelly", "dagannoth-rex", "dagannoth-prime", "dagannoth-supreme", "kalphite-queen", "kalphite-king", "kbd", "mole", "wyvern", "drakes", "wyrms", "hydra", "basilisk-knight", "basilisk", "kurask", "turoth", "spectre"
 ]
 SKILLS = [
     "overall", "attack", "defence", "strength", "hitpoints", "ranged", "prayer", "magic", "cooking", "woodcutting", "fletching", "fishing", "firemaking", "crafting", "smithing", "mining", "herblore", "agility", "thieving", "slayer", "farming", "runecraft", "hunter", "construction"
@@ -23,70 +23,124 @@ CLUES = [
     "all", "beginner", "easy", "medium", "hard", "elite", "master"
 ]
 
-class WOMMetricDropdown(discord.ui.Select):
+class WOMMetricModal(discord.ui.Modal, title="Search WOM Metric"):
     def __init__(self, parent_view):
-        options = []
-        # Up to 25 bosses
-        boss_list = [
-            "zulrah", "vorkath", "cerberus", "alchemical-hydra", "chambers-of-xeric", "theatre-of-blood", "nex", "general-graardor", "kree'arra", "kril-tsutsaroth", "commander-zilyana", "giant-mole", "kalphite-queen", "king-black-dragon", "sarachnis", "skotizo", "venenatis", "vetion", "callisto", "chaos-elemental", "chaos-fanatic", "crazy-archaeologist", "scorpia", "deranged-archaeologist", "barrows-chests", "grotesque-guardians"
-        ][:25]
-        for boss in boss_list:
-            options.append(discord.SelectOption(label=boss.replace("-", " ").title(), value=f"boss:{boss}", description="Boss KC"))
-        # Up to 25 skills, but only if room
-        max_skills = max(0, 25 - len(options))
-        skill_list = [
-            "overall", "attack", "defence", "strength", "hitpoints", "ranged", "prayer", "magic", "cooking", "woodcutting", "fletching", "fishing", "firemaking", "crafting", "smithing", "mining", "herblore", "agility", "thieving", "slayer", "farming", "runecraft", "hunter", "construction"
-        ][:max_skills]
-        for skill in skill_list:
-            options.append(discord.SelectOption(label=skill.title(), value=f"skill:{skill}", description="Skill XP/Level"))
-        # Add clues if still room
-        max_clues = max(0, 25 - len(options))
-        clue_list = ["all", "beginner", "easy", "medium", "hard", "elite", "master"][:max_clues]
-        for clue in clue_list:
-            options.append(discord.SelectOption(label=f"Clue: {clue.title()}", value=f"clue:{clue}", description="Clue Count"))
-        super().__init__(placeholder="Select a metric (Boss, Skill, Clue)", min_values=1, max_values=1, options=options)
+        super().__init__()
         self.parent_view = parent_view
-
-    async def callback(self, interaction: discord.Interaction):
-        metric_type, metric = self.values[0].split(":", 1)
-        self.parent_view.selected_metric_type = metric_type
-        self.parent_view.selected_metric = metric
-        embed = await self.parent_view.create_wom_leaderboard_embed()
-        await interaction.response.edit_message(embed=embed, view=self.parent_view)
+        
+        self.metric_input = discord.ui.TextInput(
+            label="Enter metric name (boss, skill, or clue)",
+            placeholder="e.g., zulrah, slayer, master, etc.",
+            min_length=1,
+            max_length=50,
+            required=True
+        )
+        self.add_item(self.metric_input)
+    
+    async def on_submit(self, interaction: discord.Interaction):
+        user_input = self.metric_input.value.lower().strip()
+        
+        # Try to match the input to a metric
+        metric_type, metric = self.find_metric(user_input)
+        
+        if metric_type and metric:
+            self.parent_view.selected_metric_type = metric_type
+            self.parent_view.selected_metric = metric
+            embed = await self.parent_view.create_wom_leaderboard_embed()
+            await interaction.response.edit_message(embed=embed, view=self.parent_view)
+        else:
+            # Show suggestions
+            suggestions = self.get_suggestions(user_input)
+            await interaction.response.send_message(
+                f"❌ Metric {user_input} not found.\n\n**Suggestions:**\n{suggestions}\n",
+                ephemeral=True
+            )
+    
+    def find_metric(self, user_input: str) -> tuple:
+        # The best matching metric from user input
+        # Check bosses
+        for boss in BOSSES:
+            if user_input in boss.lower() or boss.lower() in user_input:
+                return "boss", boss
+        
+        # Check skills
+        for skill in SKILLS:
+            if user_input in skill.lower() or skill.lower() in user_input:
+                return "skill", skill
+        
+        # Check clues
+        for clue in CLUES:
+            if user_input in clue.lower() or clue.lower() in user_input:
+                return "clue", clue
+        
+        return None, None
+    
+    def get_suggestions(self, user_input: str) -> str:
+        suggestions = []
+        
+        # Find partial matches
+        for boss in BOSSES[:10]:  # Limit suggestions
+            if user_input in boss.lower():
+                suggestions.append(f"• Boss: {boss.replace('-', ' ').title()}")
+        
+        for skill in SKILLS[:5]:
+            if user_input in skill.lower():
+                suggestions.append(f"• Skill: {skill.title()}")
+        
+        for clue in CLUES:
+            if user_input in clue.lower():
+                suggestions.append(f"• Clue: {clue.title()}")
+        
+        if not suggestions:
+            suggestions = [
+                "• Popular bosses: zulrah, vorkath, cerberus,",
+                "• Popular skills: slayer, agility, thieving,",
+                "• Clues: all, beginner, easy, medium, hard, elite, master"
+            ]
+        
+        return "\n".join(suggestions)  # Limit to 8 suggestions
 
 class LeaderboardView(discord.ui.View):
     def __init__(self, db: DatabaseManager):
-        super().__init__(timeout=300)  #5)  # 5es timeout
+        super().__init__(timeout=300)  # 5es timeout
         self.db = db
         self.current_page = 0
         self.leaderboard_type = "points"  # points, bingo, activity, team, wom
         self.selected_metric_type = None
         self.selected_metric = None
-        self.add_item(WOMMetricDropdown(self))
         
     @discord.ui.button(label="🏆 Points", style=discord.ButtonStyle.primary, custom_id="points")
     async def points_button(self, interaction: Interaction, button: discord.ui.Button):
         self.leaderboard_type = "points"
+        self.selected_metric_type = None  # Clear WOM selection
         embed = await self.create_leaderboard_embed()
         await interaction.response.edit_message(embed=embed, view=self)
         
     @discord.ui.button(label="🎯 Bingo", style=discord.ButtonStyle.primary, custom_id="bingo")
     async def bingo_button(self, interaction: Interaction, button: discord.ui.Button):
         self.leaderboard_type = "bingo"
+        self.selected_metric_type = None  # Clear WOM selection
         embed = await self.create_leaderboard_embed()
         await interaction.response.edit_message(embed=embed, view=self)
         
     @discord.ui.button(label="⚡ Activity", style=discord.ButtonStyle.primary, custom_id="activity")
     async def activity_button(self, interaction: Interaction, button: discord.ui.Button):
         self.leaderboard_type = "activity"
+        self.selected_metric_type = None  # Clear WOM selection
         embed = await self.create_leaderboard_embed()
         await interaction.response.edit_message(embed=embed, view=self)
         
     @discord.ui.button(label="👥 Teams", style=discord.ButtonStyle.primary, custom_id="teams")
     async def teams_button(self, interaction: Interaction, button: discord.ui.Button):
         self.leaderboard_type = "teams"
+        self.selected_metric_type = None  # Clear WOM selection
         embed = await self.create_leaderboard_embed()
         await interaction.response.edit_message(embed=embed, view=self)
+    
+    @discord.ui.button(label="🔍 WOM Search", style=discord.ButtonStyle.secondary, custom_id="wom_search")
+    async def wom_search_button(self, interaction: Interaction, button: discord.ui.Button):
+        modal = WOMMetricModal(self)
+        await interaction.response.send_modal(modal)
     
     async def create_leaderboard_embed(self) -> discord.Embed:
         if self.selected_metric_type:
