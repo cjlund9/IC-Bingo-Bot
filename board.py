@@ -107,7 +107,7 @@ def calculate_tile_status(completed_dict: Dict[str, Any], team: str) -> Dict[int
                 cursor.execute('''
                     SELECT tile_id, completed_count 
                     FROM bingo_team_progress 
-                    WHERE team = ?
+                    WHERE team_name = ?
                 ''', (team,))
                 for row in cursor.fetchall():
                     tile_status[row[0]] = row[1]
