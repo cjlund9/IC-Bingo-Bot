@@ -6,6 +6,7 @@ Fix database issues on Ubuntu server
 import sys
 import os
 import sqlite3
+import json
 
 # Add the project root to the path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -173,21 +174,46 @@ def fix_database():
         final_tables = [row[0] for row in cursor.fetchall()]
         print(f"Final tables: {final_tables}")
         
-        # Check if tiles.json exists and sync it
+        # Check if tiles.json exists and sync it manually
         if os.path.exists('data/tiles.json'):
             print("Syncing tiles from tiles.json...")
-            import json
-            from database import DatabaseManager
             
             with open('data/tiles.json', 'r') as f:
                 tiles_data = json.load(f)
             
-            db = DatabaseManager()
-            success = db.sync_bingo_tiles_from_json(tiles_data)
-            if success:
+            # Check if tiles already exist
+            cursor.execute("SELECT COUNT(*) FROM bingo_tiles")
+            existing_count = cursor.fetchone()[0]
+            
+            if existing_count == 0:
+                # Clear existing tiles and drops first
+                cursor.execute("DELETE FROM bingo_tile_drops")
+                cursor.execute("DELETE FROM bingo_tiles")
+                
+                # Insert new tiles
+                for tile_data in tiles_data:
+                    tile_index = tiles_data.index(tile_data)
+                    name = tile_data.get('name', f'Tile {tile_index}')
+                    drops_needed = tile_data.get('drops_needed', 1)
+                    
+                    cursor.execute(
+                        "INSERT INTO bingo_tiles (tile_index, name, drops_needed) VALUES (?, ?, ?)",
+                        (tile_index, name, drops_needed)
+                    )
+                    tile_id = cursor.lastrowid
+                    
+                    # Insert drops
+                    drops_required = tile_data.get('drops_required', [])
+                    for drop in drops_required:
+                        cursor.execute(
+                            "INSERT INTO bingo_tile_drops (tile_id, drop_name) VALUES (?, ?)",
+                            (tile_id, drop)
+                        )
+                
+                conn.commit()
                 print(f"✅ Synced {len(tiles_data)} tiles from tiles.json")
             else:
-                print("❌ Failed to sync tiles from tiles.json")
+                print(f"⚠️  {existing_count} tiles already exist in database, skipping sync")
         else:
             print("⚠️  tiles.json not found, skipping tile sync")
         
