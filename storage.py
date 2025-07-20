@@ -65,10 +65,19 @@ def get_tile_progress(team: str, tile_index: int) -> Dict[str, Any]:
         
         if tile_row:
             tile_name, drops_needed, completed_count, total_required = tile_row
+            completed_count = completed_count or 0
+            total_required = total_required or drops_needed or 1
+            
+            # Calculate progress percentage and completion status
+            progress_percentage = (completed_count / total_required * 100) if total_required > 0 else 0
+            is_complete = completed_count >= total_required
+            
             return {
                 'tile_name': tile_name,
-                'completed_count': completed_count or 0,
-                'total_required': total_required or drops_needed or 1,
+                'completed_count': completed_count,
+                'total_required': total_required,
+                'progress_percentage': progress_percentage,
+                'is_complete': is_complete,
                 'submissions': [
                     {
                         'user_id': sub[0],
@@ -82,6 +91,8 @@ def get_tile_progress(team: str, tile_index: int) -> Dict[str, Any]:
                 'tile_name': f"Tile {tile_index}",
                 'completed_count': 0,
                 'total_required': 1,
+                'progress_percentage': 0.0,
+                'is_complete': False,
                 'submissions': []
             }
             
