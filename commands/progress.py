@@ -95,7 +95,7 @@ def create_progress_embed(team: str, tile_index: Optional[int] = None, tile_name
     # Submissions
     if submissions:
         submission_text = "\n".join([
-            f"• {sub['drop']} (x{sub['quantity']}) by <@{sub['user_id']}>"
+            f"• {sub['drop_name']} (x{sub['quantity']}) by <@{sub['user_id']}>"
             for sub in submissions
         ])
         embed.add_field(
