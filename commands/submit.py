@@ -4,6 +4,7 @@ from discord.ext.commands import Bot
 import logging
 import time
 import asyncio
+import sqlite3
 from utils.access import team_member_access_check
 from utils.rate_limiter import rate_limit
 
@@ -17,27 +18,35 @@ logger = logging.getLogger(__name__)
 
 # Autocomplete for tile selection
 async def tile_autocomplete(interaction: Interaction, current: str):
-    placeholders = config.load_placeholders()
-    choices = []
-    
-    for i, t in enumerate(placeholders):
-        # Calculate tile coordinates (A1, A2, etc.)
-        row = i // 10  # 10x10 board
-        col = i % 10
-        row_letter = chr(65 + row)  # A=65, B=66, etc.
-        col_number = col + 1  # 1-based column numbers
-        tile_indicator = f"{row_letter}{col_number}"
+    try:
+        conn = sqlite3.connect('leaderboard.db')
+        cursor = conn.cursor()
+        cursor.execute('SELECT tile_index, name FROM bingo_tiles ORDER BY tile_index')
+        tiles = cursor.fetchall()
+        conn.close()
         
-        # Create display name with indicator
-        display_name = f"{tile_indicator}: {t['name']}"
+        choices = []
+        for tile_index, tile_name in tiles:
+            # Calculate tile coordinates (A1, A2, etc.)
+            row = tile_index // 10  # 10x10 board
+            col = tile_index % 10
+            row_letter = chr(65 + row)  # A=65, B=66, etc.
+            col_number = col + 1  # 1-based column numbers
+            tile_indicator = f"{row_letter}{col_number}"
+            
+            # Create display name with indicator
+            display_name = f"{tile_indicator}: {tile_name}"
+            
+            # Check if current input matches either the indicator or the tile name
+            if (current.lower() in display_name.lower() or 
+                current.lower() in tile_indicator.lower() or 
+                current.lower() in tile_name.lower()):
+                choices.append(app_commands.Choice(name=display_name, value=str(tile_index)))
         
-        # Check if current input matches either the indicator or the tile name
-        if (current.lower() in display_name.lower() or 
-            current.lower() in tile_indicator.lower() or 
-            current.lower() in t["name"].lower()):
-            choices.append(app_commands.Choice(name=display_name, value=str(i)))
-    
-    return choices[:25]
+        return choices[:25]
+    except Exception as e:
+        logger.error(f"Error in tile autocomplete: {e}")
+        return []
 
 # Autocomplete for drop item based on selected tile
 async def item_autocomplete(interaction: Interaction, current: str):
@@ -50,21 +59,80 @@ async def item_autocomplete(interaction: Interaction, current: str):
 
     try:
         tile_index = int(tile_value)
-        placeholders = config.load_placeholders()
-        tile_data = placeholders[tile_index]
-    except (TypeError, ValueError, IndexError) as e:
+        conn = sqlite3.connect('leaderboard.db')
+        cursor = conn.cursor()
+        
+        # Get tile info and drops from database
+        cursor.execute('''
+            SELECT bt.name, bt.drops_needed, btd.drop_name 
+            FROM bingo_tiles bt 
+            LEFT JOIN bingo_tile_drops btd ON bt.id = btd.tile_id 
+            WHERE bt.tile_index = ?
+        ''', (tile_index,))
+        
+        rows = cursor.fetchall()
+        conn.close()
+        
+        if not rows:
+            return [app_commands.Choice(name="⚠️ Invalid tile", value="invalid")]
+        
+        tile_name = rows[0][0]
+        drops_needed = rows[0][1]
+        drops = [row[2] for row in rows if row[2] is not None]  # Filter out None values
+        
+        # Check if this is a points-based tile
+        if "points" in drops and drops_needed > 1:
+            # For points-based tiles, allow numeric input
+            if current.isdigit():
+                points = int(current)
+                return [app_commands.Choice(name=f"Submit {points:,} points", value=str(points))]
+            else:
+                return [app_commands.Choice(name="Enter points earned (e.g., 1500)", value="points_input")]
+        
+        # Check if this is the Chugging Barrel tile (special resin points)
+        if tile_name == "Chugging Barrel":
+            resin_options = [
+                ("Mox resin", 17250),
+                ("Aga resin", 14000), 
+                ("Lye resin", 18600)
+            ]
+            
+            choices = []
+            for resin_name, points in resin_options:
+                if current.lower() in resin_name.lower():
+                    choices.append(app_commands.Choice(
+                        name=f"{resin_name} ({points:,} points)", 
+                        value=f"{resin_name}:{points}"
+                    ))
+            
+            # Also allow quantity input like "1000 Lye resin"
+            if current and any(resin.lower() in current.lower() for resin, _ in resin_options):
+                # Check if user is typing a quantity
+                parts = current.split()
+                if len(parts) >= 2 and parts[0].isdigit():
+                    quantity = int(parts[0])
+                    resin_name = " ".join(parts[1:])
+                    for resin, points in resin_options:
+                        if resin.lower() in resin_name.lower():
+                            choices.append(app_commands.Choice(
+                                name=f"{quantity:,} {resin}", 
+                                value=f"{resin}:{quantity}"
+                            ))
+                            break
+            
+            return choices[:25]
+
+        return [
+            app_commands.Choice(name=item, value=item)
+            for item in drops
+            if current.lower() in item.lower()
+        ][:25]
+        
+    except (TypeError, ValueError) as e:
         return [app_commands.Choice(name="⚠️ Select a tile first", value="invalid")]
-
-    drops = tile_data.get("drops_required", [])
-    if not isinstance(drops, list):
-        logger.warning(f"drops_required is not a list: {drops}")
-        drops = []
-
-    return [
-        app_commands.Choice(name=item, value=item)
-        for item in drops
-        if current.lower() in item.lower()
-    ][:25]
+    except Exception as e:
+        logger.error(f"Error in item autocomplete: {e}")
+        return [app_commands.Choice(name="⚠️ Error loading drops", value="invalid")]
 
 
 def setup_submit_command(bot: Bot):
@@ -100,14 +168,69 @@ def setup_submit_command(bot: Bot):
 
             try:
                 tile_index = int(tile)
-                placeholders = config.load_placeholders()
-                tile_data = placeholders[tile_index]
+                # Get tile data from database
+                conn = sqlite3.connect('leaderboard.db')
+                cursor = conn.cursor()
+                cursor.execute('SELECT id, name FROM bingo_tiles WHERE tile_index = ?', (tile_index,))
+                tile_row = cursor.fetchone()
+                conn.close()
+                
+                if not tile_row:
+                    await interaction.followup.send("❌ Invalid tile selection.", ephemeral=True)
+                    return
+                
+                tile_id, tile_name = tile_row
             except (ValueError, IndexError):
                 await interaction.followup.send("❌ Invalid tile selection.", ephemeral=True)
                 return
 
-            tile_name = tile_data["name"]
             team = get_user_team(member)
+
+            # Check if this is a points-based submission
+            is_points_submission = False
+            points_value = 0
+            
+            # Check if the tile is points-based and the item is numeric
+            conn = sqlite3.connect('leaderboard.db')
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT bt.drops_needed, btd.drop_name 
+                FROM bingo_tiles bt 
+                LEFT JOIN bingo_tile_drops btd ON bt.id = btd.tile_id 
+                WHERE bt.tile_index = ?
+            ''', (tile_index,))
+            
+            rows = cursor.fetchall()
+            conn.close()
+            
+            drops_needed = rows[0][0] if rows else 1
+            drops = [row[1] for row in rows if row[1] is not None]
+            
+            if "points" in drops and drops_needed > 1 and item.isdigit():
+                is_points_submission = True
+                points_value = int(item)
+                if points_value <= 0:
+                    await interaction.followup.send("❌ Points must be greater than 0.", ephemeral=True)
+                    return
+            
+            # Check if this is a resin submission for Chugging Barrel
+            if tile_name == "Chugging Barrel" and ":" in item:
+                try:
+                    resin_name, value_str = item.split(":", 1)
+                    if value_str.isdigit():
+                        # This is a quantity submission (e.g., "Lye resin:1000")
+                        quantity = int(value_str)
+                        points_value = quantity  # Store the quantity, not points
+                        is_points_submission = True
+                        item = resin_name  # Use the resin name for display
+                    else:
+                        # This is a points submission (legacy format)
+                        points_value = int(value_str)
+                        is_points_submission = True
+                        item = resin_name
+                except (ValueError, IndexError):
+                    await interaction.followup.send("❌ Invalid resin submission format.", ephemeral=True)
+                    return
 
             review_channel = discord.utils.get(interaction.guild.text_channels, name=config.REVIEW_CHANNEL_NAME)
             if not review_channel:
@@ -126,11 +249,27 @@ def setup_submit_command(bot: Bot):
 
             view = ApprovalView(member, tile_index, team, drop=item)
 
-            await review_channel.send(
-                content=(
+            # Create submission message
+            if is_points_submission:
+                if tile_name == "Chugging Barrel" and ":" in item:
+                    # This was a resin submission, show both resin and points
+                    submission_content = (
+                        f"📥 Submission from {member.mention} for **{tile_name}** (Team: {team})\n"
+                        f"Resin: **{item}** ({points_value:,} points)"
+                    )
+                else:
+                    submission_content = (
+                        f"📥 Submission from {member.mention} for **{tile_name}** (Team: {team})\n"
+                        f"Points: **{points_value:,}**"
+                    )
+            else:
+                submission_content = (
                     f"📥 Submission from {member.mention} for **{tile_name}** (Team: {team})\n"
                     f"Drop: **{item}**"
-                ),
+                )
+
+            await review_channel.send(
+                content=submission_content,
                 file=file,
                 view=view
             )

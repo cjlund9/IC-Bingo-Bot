@@ -2,27 +2,27 @@
   {
     "name": "Rare Raid Unique",
     "drops_required": [
-      "Masori mask 1",
-      "Masori chaps 1",
-      "Masori body 1",
-      "Elidinis' ward 1",
-      "Tumeken's shadow 1",
-      "Twisted buckler 1",
-      "Dragon hunter crossbow 1",
-      "Dinh's bulwark 1",
-      "Ancestral hat 1",
-      "Ancestral robe top 1",
-      "Ancestral robe bottom 1",
-      "Dragon claws 1",
-      "Elder maul 1",
-      "Kodai insignia 1",
-      "Twisted bow 1",
-      "Ghrazi rapier 1",
-      "Sanguinesti staff 1",
-      "Justicar faceguard 1",
-      "Justicar chestguard 1",
-      "Justicar leggaurds 1",
-      "Scythe of vitur 1"
+      "Masori mask",
+      "Masori chaps",
+      "Masori body",
+      "Elidinis' ward",
+      "Tumeken's shadow",
+      "Twisted buckler",
+      "Dragon hunter crossbow",
+      "Dinh's bulwark",
+      "Ancestral hat",
+      "Ancestral robe top",
+      "Ancestral robe bottom",
+      "Dragon claws",
+      "Elder maul",
+      "Kodai insignia",
+      "Twisted bow",
+      "Ghrazi rapier",
+      "Sanguinesti staff",
+      "Justicar faceguard",
+      "Justicar chestguard",
+      "Justicar leggaurds",
+      "Scythe of vitur"
     ],
     "drops_needed": 1
   },
@@ -61,9 +61,9 @@
   {
     "name": "3x Gauntlet Uniques",
     "drops_required": [
-      "Crystal armour seed 1",
-      "Enhanced crystal weapon seed 1",
-      "Crystal weapon seed 1"
+      "Crystal armour seed",
+      "Enhanced crystal weapon seed",
+      "Crystal weapon seed"
     ],
     "drops_needed": 3
   },
@@ -124,11 +124,9 @@
     "drops_needed": 1
   },
   {
-    "name": "Full Malediction Ward",
+    "name": "3x Malediction Ward Pieces",
     "drops_required": [
-      "Malediction Shard 1",
-      "Malediction Shard 2",
-      "Malediction Shard 3"
+      "Malediction Shard"
     ],
     "drops_needed": 3
   },
@@ -209,14 +207,14 @@
   {
     "name": "Any Virtus Piece",
     "drops_required": [
-      "Virtus mask 1",
-      "Virtus robe top 1",
-      "Virtus robe bottom 1"
+      "Virtus mask",
+      "Virtus robe top",
+      "Virtus robe bottom"
     ],
     "drops_needed": 1
   },
   {
-    "name": "Bronze-Dragon Boots",
+    "name": "10x Metal Boots",
     "drops_required": [
       "Bronze Boots",
       "Iron boots",
@@ -226,7 +224,7 @@
       "Rune boots",
       "Dragon boots"
     ],
-    "drops_needed": 7
+    "drops_needed": 10
   },
   {
     "name": "2x Full Twinflame Staff",
@@ -248,74 +246,71 @@
     "drops_required": [
       "Hydra's eye",
       "Hydra's heart",
-      "Hydra's fang",
-      "Hydra tail",
-      "Hydra leather",
-      "Hydra's claw"
+      "Hydra's fang"
     ],
     "drops_needed": 3
   },
   {
     "name": "Any pet",
     "drops_required": [
-      "Abyssal Orphan 1",
-      "Baby mole 1",
-      "Baron 1",
-      "Bran 1",
-      "Butch 1",
-      "Callisto cub 1",
-      "Hellpuppy 1",
-      "Huberte 1",
-      "Ikkle hydra 1",
-      "Jal-nib-rek 1",
-      "Kalphite princess 1",
-      "Lil' zik 1",
-      "Lil'viathan 1",
-      "Little nightmare 1",
-      "Moxi 1",
-      "Muphin 1",
-      "Nexling 1",
-      "Nid 1",
-      "Noon 1",
-      "Omlet 1",
-      "Pet Chaos Elemental 1",
-      "Pet dagannoth prime 1",
-      "Pet dagannoth rex 1",
-      "Pet dagannoth supreme 1",
-      "Pet dark core 1",
-      "Pet general graardor 1",
-      "Pet k'ril tsutsaroth 1",
-      "Pet kraken 1",
-      "Pet kree'arra 1",
-      "Pet smoke devil 1",
-      "Pet snakeling 1",
-      "Pet zilyana 1",
-      "Phoenix 1",
-      "Prince black dragon 1",
-      "Scorpia's offspring 1",
-      "Scurry 1",
-      "Skotos 1",
-      "Smolcano 1",
-      "Smol heredit 1",
-      "Sraracha 1",
-      "Tiny tempor 1",
-      "Tumeken's guardian 1",
-      "Tzrek-jad 1",
-      "Venenatis spiderling 1",
-      "Vet'ion jr. 1",
-      "Vorki 1",
-      "Wisp 1",
-      "Yami 1",
-      "Youngllef 1"
+      "Abyssal Orphan",
+      "Baby mole",
+      "Baron",
+      "Bran",
+      "Butch",
+      "Callisto cub",
+      "Hellpuppy",
+      "Huberte",
+      "Ikkle hydra",
+      "Jal-nib-rek",
+      "Kalphite princess",
+      "Lil' zik",
+      "Lil'viathan",
+      "Little nightmare",
+      "Moxi",
+      "Muphin",
+      "Nexling",
+      "Nid",
+      "Noon",
+      "Omlet",
+      "Pet Chaos Elemental",
+      "Pet dagannoth prime",
+      "Pet dagannoth rex",
+      "Pet dagannoth supreme",
+      "Pet dark core",
+      "Pet general graardor",
+      "Pet k'ril tsutsaroth",
+      "Pet kraken",
+      "Pet kree'arra",
+      "Pet smoke devil",
+      "Pet snakeling",
+      "Pet zilyana",
+      "Phoenix",
+      "Prince black dragon",
+      "Scorpia's offspring",
+      "Scurry",
+      "Skotos",
+      "Smolcano",
+      "Smol heredit",
+      "Sraracha",
+      "Tiny tempor",
+      "Tumeken's guardian",
+      "Tzrek-jad",
+      "Venenatis spiderling",
+      "Vet'ion jr.",
+      "Vorki",
+      "Wisp",
+      "Yami",
+      "Youngllef"
     ],
     "drops_needed": 1
   },
   {
-    "name": "5x Awakener Orbs",
+    "name": "10x Steel Rings",
     "drops_required": [
       "Awakener Orb"
     ],
-    "drops_needed": 5
+    "drops_needed": 10
   },
   {
     "name": "1x Rare Raid Unique",
@@ -582,7 +577,7 @@
     "drops_needed": 3
   },
   {
-    "name": "Any Rev Weapons",
+    "name": "Any Rev Weapon",
     "drops_required": [
       "Craw's bow",
       "Thammaron's Sceptre",
@@ -603,8 +598,8 @@
   {
     "name": "Drakes Tooth & Claw",
     "drops_required": [
-      "Drakes tooth",
-      "Drakes claw"
+      "Drakes tooth 1",
+      "Drakes claw 1"
     ],
     "drops_needed": 2
   },
@@ -736,9 +731,7 @@
   {
     "name": "3x Noxious Halberd Pieces",
     "drops_required": [
-      "Noxious Halberd Piece 1",
-      "Noxious Halberd piece 2",
-      "Noxious Halberd Piece 3"
+      "Noxious Halberd Piece"
     ],
     "drops_needed": 3
   },
@@ -901,7 +894,8 @@
     "drops_required": [
       "points"
     ],
-    "drops_needed": 1
+    "drops_needed": 5000,
+    "points_based": true
   },
   {
     "name": "All GOTR Dyes",
@@ -947,9 +941,7 @@
   {
     "name": "3x Bludgeon Pieces",
     "drops_required": [
-      "Bludgeon piece 1",
-      "Bludgeon piece 2",
-      "Bludgeon piece 3"
+      "Bludgeon piece"
     ],
     "drops_needed": 3
   },
@@ -970,10 +962,17 @@
   {
     "name": "Chugging Barrel",
     "drops_required": [
-      "Chugging Barrel",
-      "points"
+      "Mox resin",
+      "Aga resin", 
+      "Lye resin"
     ],
-    "drops_needed": 1
+    "drops_needed": 1,
+    "points_based": true,
+    "resin_points": {
+      "Mox resin": 17250,
+      "Aga resin": 14000,
+      "Lye resin": 18600
+    }
   },
   {
     "name": "Any Chaos Elder Robe Piece",

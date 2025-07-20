@@ -28,9 +28,10 @@ from commands.sync import setup_sync_command
 from commands.teams_consolidated import setup_teams_consolidated_command
 from commands.stats import setup_stats_command
 from commands.leaderboard_cmd import setup_leaderboard_commands
-from commands.shop_cmd import setup_shop_commands
+# from commands.shop_cmd import setup_shop_commands
 from commands.monitor import setup_monitor_command
-from commands.wom_sync import setup_wom_sync_commands
+from commands.csv_export import setup_csv_export_command
+# from commands.wom_sync import setup_wom_sync_commands
 
 
 # Import utilities
@@ -237,6 +238,7 @@ async def main():
         # setup_leaderboard_commands(bot)  # Temporarily disabled
         # setup_shop_commands(bot)  # Temporarily disabled
         setup_monitor_command(bot)
+        setup_csv_export_command(bot)
         # setup_wom_sync_commands(bot)  # Temporarily disabled
 
         

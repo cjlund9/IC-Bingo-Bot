@@ -11,11 +11,11 @@ logger = logging.getLogger(__name__)
 
 def setup_shop_commands(bot: Bot):
     
-    @bot.tree.command(
-        name="shop",
-        description="Shop and points management",
-        guild=discord.Object(id=GUILD_ID)
-    )
+    # @bot.tree.command(
+    #     name="shop",
+    #     description="Shop and points management",
+    #     guild=discord.Object(id=GUILD_ID)
+    # )
     @app_commands.describe(
         action="What you want to do",
         item_id="ID of the item (for buy/remove)",
