@@ -21,6 +21,13 @@ async def tile_autocomplete(interaction: Interaction, current: str):
     try:
         conn = sqlite3.connect('leaderboard.db')
         cursor = conn.cursor()
+        
+        # Check if bingo_tiles table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='bingo_tiles'")
+        if not cursor.fetchone():
+            conn.close()
+            return [app_commands.Choice(name="⚠️ Database not initialized", value="invalid")]
+        
         cursor.execute('SELECT tile_index, name FROM bingo_tiles ORDER BY tile_index')
         tiles = cursor.fetchall()
         conn.close()
@@ -46,7 +53,7 @@ async def tile_autocomplete(interaction: Interaction, current: str):
         return choices[:25]
     except Exception as e:
         logger.error(f"Error in tile autocomplete: {e}")
-        return []
+        return [app_commands.Choice(name="⚠️ Error loading tiles", value="invalid")]
 
 # Autocomplete for drop item based on selected tile
 async def item_autocomplete(interaction: Interaction, current: str):
@@ -58,9 +65,18 @@ async def item_autocomplete(interaction: Interaction, current: str):
                 break
 
     try:
+        if not tile_value or tile_value == "invalid":
+            return [app_commands.Choice(name="⚠️ Select a tile first", value="invalid")]
+        
         tile_index = int(tile_value)
         conn = sqlite3.connect('leaderboard.db')
         cursor = conn.cursor()
+        
+        # Check if bingo_tiles table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='bingo_tiles'")
+        if not cursor.fetchone():
+            conn.close()
+            return [app_commands.Choice(name="⚠️ Database not initialized", value="invalid")]
         
         # Get tile info and drops from database
         cursor.execute('''
@@ -121,12 +137,14 @@ async def item_autocomplete(interaction: Interaction, current: str):
                             break
             
             return choices[:25]
-
-        return [
-            app_commands.Choice(name=item, value=item)
-            for item in drops
-            if current.lower() in item.lower()
-        ][:25]
+        
+        # For regular tiles, show available drops
+        choices = []
+        for drop in drops:
+            if current.lower() in drop.lower():
+                choices.append(app_commands.Choice(name=drop, value=drop))
+        
+        return choices[:25]
         
     except (TypeError, ValueError) as e:
         return [app_commands.Choice(name="⚠️ Select a tile first", value="invalid")]

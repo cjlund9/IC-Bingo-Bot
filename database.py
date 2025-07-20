@@ -143,6 +143,15 @@ class DatabaseManager:
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
 
+            -- Board release configuration table
+            CREATE TABLE IF NOT EXISTS board_release_config (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                release_time TIMESTAMP NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                created_by TEXT NOT NULL,
+                is_active BOOLEAN DEFAULT 1
+            );
+
             -- Bingo-specific indexes
             CREATE INDEX IF NOT EXISTS idx_bingo_tiles_index ON bingo_tiles(tile_index);
             CREATE INDEX IF NOT EXISTS idx_bingo_team_progress_team ON bingo_team_progress(team_name);
@@ -1038,3 +1047,87 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"Error getting WOM players: {e}")
             return [] 
+
+    def set_board_release_time(self, release_time: str, created_by: str) -> bool:
+        """Set the board release time"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Deactivate any existing active release times
+                cursor.execute("UPDATE board_release_config SET is_active = 0 WHERE is_active = 1")
+                
+                # Insert new release time
+                cursor.execute("""
+                    INSERT INTO board_release_config (release_time, created_by, is_active)
+                    VALUES (?, ?, 1)
+                """, (release_time, created_by))
+                
+                conn.commit()
+                logger.info(f"Board release time set to {release_time} by {created_by}")
+                return True
+        except Exception as e:
+            logger.error(f"Error setting board release time: {e}")
+            return False
+
+    def get_board_release_time(self) -> Optional[str]:
+        """Get the current active board release time"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT release_time FROM board_release_config 
+                    WHERE is_active = 1 
+                    ORDER BY created_at DESC 
+                    LIMIT 1
+                """)
+                result = cursor.fetchone()
+                return result[0] if result else None
+        except Exception as e:
+            logger.error(f"Error getting board release time: {e}")
+            return None
+
+    def clear_board_release_time(self) -> bool:
+        """Clear the board release time (make board available immediately)"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("UPDATE board_release_config SET is_active = 0 WHERE is_active = 1")
+                conn.commit()
+                logger.info("Board release time cleared - board is now available")
+                return True
+        except Exception as e:
+            logger.error(f"Error clearing board release time: {e}")
+            return False
+
+    def get_board_release_status(self) -> Dict[str, Any]:
+        """Get detailed board release status"""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT release_time, created_by, created_at 
+                    FROM board_release_config 
+                    WHERE is_active = 1 
+                    ORDER BY created_at DESC 
+                    LIMIT 1
+                """)
+                result = cursor.fetchone()
+                
+                if result:
+                    return {
+                        'release_time': result[0],
+                        'created_by': result[1],
+                        'created_at': result[2],
+                        'is_scheduled': True
+                    }
+                else:
+                    return {
+                        'is_scheduled': False,
+                        'release_time': None,
+                        'created_by': None,
+                        'created_at': None
+                    }
+        except Exception as e:
+            logger.error(f"Error getting board release status: {e}")
+            return {'is_scheduled': False, 'error': str(e)} 

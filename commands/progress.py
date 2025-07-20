@@ -170,44 +170,23 @@ def setup_progress_command(bot: Bot):
     async def progress_cmd(interaction: Interaction, team: Optional[str] = None, tile: Optional[int] = None, tile_name: Optional[str] = None):
         try:
             # Determine team
-            if team:
-                team = team.lower()
-                if team not in {role.lower() for role in TEAM_ROLES} and team != DEFAULT_TEAM:
-                    await interaction.response.send_message(
-                        f"❌ Invalid team '{team}'. Valid teams: {', '.join(TEAM_ROLES)} or 'all'.",
-                        ephemeral=True
-                    )
-                    return
-            else:
-                # Get user's team automatically
-                team = get_user_team(interaction.user)
-                if team == DEFAULT_TEAM:
-                    await interaction.response.send_message(
-                        "❌ You must be assigned to a team role to view progress. Please contact an administrator to get assigned to a team.",
-                        ephemeral=True
-                    )
-                    return
+            if not team:
+                roles = [r.name for r in interaction.user.roles]
+                team = DEFAULT_TEAM
+                for role in TEAM_ROLES:
+                    if role in roles:
+                        team = role.lower()
+                        break
             
-            # Require either tile index or tile name
-            if tile is None and tile_name is None:
+            # Validate team
+            if team.lower() not in [t.lower() for t in TEAM_ROLES] and team.lower() != DEFAULT_TEAM:
                 await interaction.response.send_message(
-                    "❌ Please specify either a tile index or tile name to view progress for a specific tile.",
+                    f"❌ Invalid team '{team}'. Valid teams: {', '.join(TEAM_ROLES)} or 'all'.",
                     ephemeral=True
                 )
                 return
             
-            # Validate tile index if provided
-            if tile is not None:
-                from config import load_placeholders
-                placeholders = load_placeholders()
-                if tile < 0 or tile >= len(placeholders):
-                    await interaction.response.send_message(
-                        f"❌ Invalid tile index. Must be between 0 and {len(placeholders) - 1}.",
-                        ephemeral=True
-                    )
-                    return
-            
-            # Validate that only one of tile or tile_name is provided
+            # Validate tile parameters
             if tile is not None and tile_name is not None:
                 await interaction.response.send_message(
                     "❌ Please provide either a tile index OR a tile name, not both.",
@@ -217,28 +196,26 @@ def setup_progress_command(bot: Bot):
             
             # Create and send embed
             embed = create_progress_embed(team, tile, tile_name)
-            
-            # Check if interaction is still valid
-            if not interaction.response.is_done():
-                await interaction.response.send_message(embed=embed)
-            else:
-                await interaction.followup.send(embed=embed)
+            await interaction.response.send_message(embed=embed)
             
             logger.info(f"Progress viewed: Team={team}, Tile={tile}, TileName={tile_name}")
             
         except Exception as e:
             logger.error(f"Error in progress command: {e}")
-            # Check if interaction is still valid before responding
-            if not interaction.response.is_done():
+            try:
                 await interaction.response.send_message(
                     "❌ An error occurred while loading progress information.",
                     ephemeral=True
                 )
-            else:
-                await interaction.followup.send(
-                    "❌ An error occurred while loading progress information.",
-                    ephemeral=True
-                )
+            except:
+                # If interaction is already responded to, try followup
+                try:
+                    await interaction.followup.send(
+                        "❌ An error occurred while loading progress information.",
+                        ephemeral=True
+                    )
+                except:
+                    logger.error("Could not send error message to user")
 
     @bot.tree.command(
         name="leaderboard",
