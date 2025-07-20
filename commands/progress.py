@@ -25,7 +25,9 @@ def create_progress_embed(team: str, tile_index: Optional[int] = None, tile_name
             )
             return embed
         # Get the actual tile index for display
-        actual_tile_index = get_tile_by_name(tile_name)
+        db_tile_id = get_tile_by_name(tile_name)
+        # Convert database ID (1-based) to board index (0-based)
+        actual_tile_index = db_tile_id - 1 if db_tile_id is not None else 0
         display_tile_name = progress.get("tile_name", tile_name)
     else:
         progress = get_tile_progress(team, tile_index)
@@ -36,8 +38,9 @@ def create_progress_embed(team: str, tile_index: Optional[int] = None, tile_name
                 color=0xFF0000
             )
             return embed
-        actual_tile_index = tile_index
-        display_tile_name = progress.get("tile_name", f"Tile {actual_tile_index}")
+        # Convert database ID (1-based) to board index (0-based)
+        actual_tile_index = tile_index - 1 if tile_index is not None else 0
+        display_tile_name = progress.get("tile_name", f"Tile {tile_index}")
     
     # Add tile indicator (A1, A2, etc.)
     row = actual_tile_index // 10  # 10x10 board
