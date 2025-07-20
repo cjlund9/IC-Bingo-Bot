@@ -48,9 +48,14 @@ def get_tile_progress(team: str, tile_index: int) -> Dict[str, Any]:
         conn = sqlite3.connect('leaderboard.db')
         cursor = conn.cursor()
         
-        # Get team progress
-        cursor.execute('''SELECT completed_count, total_required FROM bingo_team_progress WHERE team_name = ? AND tile_id = ?''', (team, tile_index))
-        progress_row = cursor.fetchone()
+        # Get tile name and team progress
+        cursor.execute('''
+            SELECT t.name, t.drops_needed, p.completed_count, p.total_required 
+            FROM bingo_tiles t 
+            LEFT JOIN bingo_team_progress p ON t.id = p.tile_id AND p.team_name = ?
+            WHERE t.id = ?
+        ''', (team, tile_index))
+        tile_row = cursor.fetchone()
         
         # Get submissions
         cursor.execute('''SELECT user_id, drop_name, quantity FROM bingo_submissions WHERE team_name = ? AND tile_id = ?''', (team, tile_index))
@@ -58,11 +63,12 @@ def get_tile_progress(team: str, tile_index: int) -> Dict[str, Any]:
         
         conn.close()
         
-        if progress_row:
-            completed_count, total_required = progress_row
+        if tile_row:
+            tile_name, drops_needed, completed_count, total_required = tile_row
             return {
-                'completed_count': completed_count,
-                'total_required': total_required,
+                'tile_name': tile_name,
+                'completed_count': completed_count or 0,
+                'total_required': total_required or drops_needed or 1,
                 'submissions': [
                     {
                         'user_id': sub[0],
@@ -73,6 +79,7 @@ def get_tile_progress(team: str, tile_index: int) -> Dict[str, Any]:
             }
         else:
             return {
+                'tile_name': f"Tile {tile_index}",
                 'completed_count': 0,
                 'total_required': 1,
                 'submissions': []
