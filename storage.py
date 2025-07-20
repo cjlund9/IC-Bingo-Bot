@@ -36,7 +36,7 @@ def get_tile_by_name(tile_name: str) -> Optional[int]:
 
 def get_tile_progress_by_name(team: str, tile_name: str) -> Dict[str, Any]:
     """Get progress for a specific tile by name and team from the database."""
-    tile_index = get_tile_index_by_name(tile_name)
+    tile_index = get_tile_by_name(tile_name)
     if tile_index is None:
         return {}
     
