@@ -141,7 +141,13 @@ def setup_progress_command(bot: Bot):
             matching_tiles = []
             for i, tile_data in enumerate(placeholders):
                 if current.lower() in tile_data.get('name', '').lower():
-                    matching_tiles.append((i, tile_data.get('name', '')))
+                    # Calculate board position (A1, B2, etc.)
+                    row = i // 10
+                    col = i % 10
+                    row_letter = chr(65 + row)  # A=65, B=66, etc.
+                    col_number = col + 1  # 1-based column numbers
+                    board_pos = f"{row_letter}{col_number}"
+                    matching_tiles.append((i, tile_data.get('name', ''), board_pos))
             
             # Sort by relevance (exact matches first, then alphabetical)
             matching_tiles.sort(key=lambda x: (
@@ -151,7 +157,7 @@ def setup_progress_command(bot: Bot):
             
             # Return up to 25 choices
             return [
-                app_commands.Choice(name=f"{tile[1]} (Tile {tile[0]})", value=tile[1])
+                app_commands.Choice(name=f"{tile[1]} ({tile[2]})", value=tile[1])
                 for tile in matching_tiles[:25]
             ]
         except Exception as e:
