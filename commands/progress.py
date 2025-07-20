@@ -2,7 +2,7 @@ import discord
 from discord import app_commands, Interaction
 from discord.ext.commands import Bot
 import logging
-from typing import Optional
+from typing import Optional, List
 
 from config import GUILD_ID, TEAM_ROLES, DEFAULT_TEAM, ADMIN_ROLE
 from storage import get_tile_progress, get_team_progress, get_tile_progress_by_name, get_tile_by_name
@@ -128,6 +128,33 @@ def create_progress_embed(team: str, tile_index: Optional[int] = None, tile_name
     return embed
 
 def setup_progress_command(bot: Bot):
+    async def tile_name_autocomplete(interaction: Interaction, current: str) -> List[app_commands.Choice[str]]:
+        """Autocomplete for tile names"""
+        try:
+            from config import load_placeholders
+            placeholders = load_placeholders()
+            
+            # Filter tiles that match the current input (case-insensitive)
+            matching_tiles = []
+            for i, tile_data in enumerate(placeholders):
+                if current.lower() in tile_data.get('name', '').lower():
+                    matching_tiles.append((i, tile_data.get('name', '')))
+            
+            # Sort by relevance (exact matches first, then alphabetical)
+            matching_tiles.sort(key=lambda x: (
+                not x[1].lower().startswith(current.lower()),
+                x[1].lower()
+            ))
+            
+            # Return up to 25 choices
+            return [
+                app_commands.Choice(name=f"{tile[1]} (Tile {tile[0]})", value=tile[1])
+                for tile in matching_tiles[:25]
+            ]
+        except Exception as e:
+            logger.error(f"Error in tile name autocomplete: {e}")
+            return []
+
     @bot.tree.command(
         name="progress",
         description="View progress for a specific tile",
@@ -137,8 +164,9 @@ def setup_progress_command(bot: Bot):
     @app_commands.describe(
         team="Team to show progress for (optional, defaults to your assigned team)",
         tile="Tile index to show specific progress",
-        tile_name="Tile name to search for (partial match)"
+        tile_name="Tile name to search for (autocomplete available)"
     )
+    @app_commands.autocomplete(tile_name=tile_name_autocomplete)
     async def progress_cmd(interaction: Interaction, team: Optional[str] = None, tile: Optional[int] = None, tile_name: Optional[str] = None):
         try:
             # Determine team
@@ -189,16 +217,28 @@ def setup_progress_command(bot: Bot):
             
             # Create and send embed
             embed = create_progress_embed(team, tile, tile_name)
-            await interaction.response.send_message(embed=embed)
+            
+            # Check if interaction is still valid
+            if not interaction.response.is_done():
+                await interaction.response.send_message(embed=embed)
+            else:
+                await interaction.followup.send(embed=embed)
             
             logger.info(f"Progress viewed: Team={team}, Tile={tile}, TileName={tile_name}")
             
         except Exception as e:
             logger.error(f"Error in progress command: {e}")
-            await interaction.response.send_message(
-                "❌ An error occurred while loading progress information.",
-                ephemeral=True
-            )
+            # Check if interaction is still valid before responding
+            if not interaction.response.is_done():
+                await interaction.response.send_message(
+                    "❌ An error occurred while loading progress information.",
+                    ephemeral=True
+                )
+            else:
+                await interaction.followup.send(
+                    "❌ An error occurred while loading progress information.",
+                    ephemeral=True
+                )
 
     @bot.tree.command(
         name="leaderboard",
