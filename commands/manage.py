@@ -7,7 +7,7 @@ from typing import Optional
 from config import GUILD_ID, TEAM_ROLES, DEFAULT_TEAM, ADMIN_ROLE, EVENT_COORDINATOR_ROLE, load_placeholders
 from storage import get_tile_progress, get_team_progress
 from views.submission_management import SubmissionManagementView, SubmissionRemovalView
-from utils.access import bot_access_check
+from utils.access import admin_or_event_coordinator_id_check
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +132,7 @@ def setup_manage_command(bot: Bot):
         description="Manage submissions for a specific tile (Admin/Event Coordinator only)",
         guild=discord.Object(id=GUILD_ID)
     )
-    @app_commands.check(bot_access_check)
+    @app_commands.check(admin_or_event_coordinator_id_check)
     @app_commands.describe(
         team="Team to manage (optional, defaults to your team)",
         tile="Tile index or name to manage"

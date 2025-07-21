@@ -1,18 +1,26 @@
 import discord
 from discord import app_commands
-from config import ADMIN_ROLE, EVENT_COORDINATOR_ROLE
+from config import ADMIN_ROLE, EVENT_COORDINATOR_ROLE, ADMIN_ROLE_ID, EVENT_COORDINATOR_ROLE_ID
 
 def has_bot_access(member: discord.Member) -> bool:
     """Check if a member has access to bot commands (leadership, event coordinator, or team member)"""
     guild = member.guild
     
-    # Check for leadership role
-    leadership_role = discord.utils.get(guild.roles, name=ADMIN_ROLE)
+    # Check for leadership role by ID or name
+    leadership_role = None
+    if ADMIN_ROLE_ID:
+        leadership_role = discord.utils.get(guild.roles, id=int(ADMIN_ROLE_ID))
+    if not leadership_role:
+        leadership_role = discord.utils.get(guild.roles, name=ADMIN_ROLE)
     if leadership_role and leadership_role in member.roles:
         return True
     
-    # Check for event coordinator role
-    event_coordinator_role = discord.utils.get(guild.roles, name=EVENT_COORDINATOR_ROLE)
+    # Check for event coordinator role by ID or name
+    event_coordinator_role = None
+    if EVENT_COORDINATOR_ROLE_ID:
+        event_coordinator_role = discord.utils.get(guild.roles, id=int(EVENT_COORDINATOR_ROLE_ID))
+    if not event_coordinator_role:
+        event_coordinator_role = discord.utils.get(guild.roles, name=EVENT_COORDINATOR_ROLE)
     if event_coordinator_role and event_coordinator_role in member.roles:
         return True
     
@@ -32,7 +40,11 @@ def has_admin_access(member: discord.Member) -> bool:
     guild = member.guild
     
     # Check for leadership role only
-    leadership_role = discord.utils.get(guild.roles, name=ADMIN_ROLE)
+    leadership_role = None
+    if ADMIN_ROLE_ID:
+        leadership_role = discord.utils.get(guild.roles, id=int(ADMIN_ROLE_ID))
+    if not leadership_role:
+        leadership_role = discord.utils.get(guild.roles, name=ADMIN_ROLE)
     if leadership_role and leadership_role in member.roles:
         return True
     
@@ -43,12 +55,20 @@ def has_leadership_or_event_coordinator_access(member: discord.Member) -> bool:
     guild = member.guild
     
     # Check for leadership role
-    leadership_role = discord.utils.get(guild.roles, name=ADMIN_ROLE)
+    leadership_role = None
+    if ADMIN_ROLE_ID:
+        leadership_role = discord.utils.get(guild.roles, id=int(ADMIN_ROLE_ID))
+    if not leadership_role:
+        leadership_role = discord.utils.get(guild.roles, name=ADMIN_ROLE)
     if leadership_role and leadership_role in member.roles:
         return True
     
     # Check for event coordinator role
-    event_coordinator_role = discord.utils.get(guild.roles, name=EVENT_COORDINATOR_ROLE)
+    event_coordinator_role = None
+    if EVENT_COORDINATOR_ROLE_ID:
+        event_coordinator_role = discord.utils.get(guild.roles, id=int(EVENT_COORDINATOR_ROLE_ID))
+    if not event_coordinator_role:
+        event_coordinator_role = discord.utils.get(guild.roles, name=EVENT_COORDINATOR_ROLE)
     if event_coordinator_role and event_coordinator_role in member.roles:
         return True
     
@@ -59,12 +79,20 @@ def has_team_member_access(member: discord.Member) -> bool:
     guild = member.guild
     
     # Check for leadership role
-    leadership_role = discord.utils.get(guild.roles, name=ADMIN_ROLE)
+    leadership_role = None
+    if ADMIN_ROLE_ID:
+        leadership_role = discord.utils.get(guild.roles, id=int(ADMIN_ROLE_ID))
+    if not leadership_role:
+        leadership_role = discord.utils.get(guild.roles, name=ADMIN_ROLE)
     if leadership_role and leadership_role in member.roles:
         return True
     
     # Check for event coordinator role
-    event_coordinator_role = discord.utils.get(guild.roles, name=EVENT_COORDINATOR_ROLE)
+    event_coordinator_role = None
+    if EVENT_COORDINATOR_ROLE_ID:
+        event_coordinator_role = discord.utils.get(guild.roles, id=int(EVENT_COORDINATOR_ROLE_ID))
+    if not event_coordinator_role:
+        event_coordinator_role = discord.utils.get(guild.roles, name=EVENT_COORDINATOR_ROLE)
     if event_coordinator_role and event_coordinator_role in member.roles:
         return True
     
@@ -102,3 +130,12 @@ def team_member_access_check(interaction: discord.Interaction) -> bool:
     if not has_team_member_access(interaction.user):
         raise app_commands.errors.MissingRole(f"{ADMIN_ROLE}, {EVENT_COORDINATOR_ROLE}, or team role")
     return True 
+
+def admin_or_event_coordinator_id_check(interaction: discord.Interaction) -> bool:
+    user_role_ids = [r.id for r in interaction.user.roles]
+    user_role_names = [r.name for r in interaction.user.roles]
+    if (ADMIN_ROLE_ID and int(ADMIN_ROLE_ID) in user_role_ids) or (EVENT_COORDINATOR_ROLE_ID and int(EVENT_COORDINATOR_ROLE_ID) in user_role_ids):
+        return True
+    if ADMIN_ROLE in user_role_names or EVENT_COORDINATOR_ROLE in user_role_names:
+        return True
+    raise app_commands.errors.MissingRole(f"{ADMIN_ROLE_ID or ADMIN_ROLE} or {EVENT_COORDINATOR_ROLE_ID or EVENT_COORDINATOR_ROLE}") 

@@ -4,7 +4,7 @@ from discord import Interaction
 from views.modals import HoldReasonModal, DenyReasonModal
 import board
 from views.hold import HoldReviewView
-from config import EVENT_COORDINATOR_ROLE, ADMIN_ROLE, HOLD_REVIEW_CHANNEL_NAME
+from config import EVENT_COORDINATOR_ROLE, ADMIN_ROLE, EVENT_COORDINATOR_ROLE_ID, ADMIN_ROLE_ID, HOLD_REVIEW_CHANNEL_NAME
 from core.update_board import update_board_message
 
 class ApprovalView(View):
@@ -17,8 +17,12 @@ class ApprovalView(View):
         self.submission_id = submission_id  # Store submission ID for approval
 
     async def interaction_allowed(self, interaction: Interaction) -> bool:
-        roles = [r.name for r in interaction.user.roles]
-        return EVENT_COORDINATOR_ROLE in roles or ADMIN_ROLE in roles
+        # Check by role ID if provided, else by name
+        user_role_ids = [r.id for r in interaction.user.roles]
+        user_role_names = [r.name for r in interaction.user.roles]
+        if (ADMIN_ROLE_ID and int(ADMIN_ROLE_ID) in user_role_ids) or (EVENT_COORDINATOR_ROLE_ID and int(EVENT_COORDINATOR_ROLE_ID) in user_role_ids):
+            return True
+        return EVENT_COORDINATOR_ROLE in user_role_names or ADMIN_ROLE in user_role_names
 
     @discord.ui.button(label="✅ Accept", style=discord.ButtonStyle.success)
     async def accept(self, interaction: Interaction, button: Button):

@@ -5,7 +5,7 @@ from discord.ui import View, Button
 import logging
 import requests
 import json
-from utils.access import has_bot_access, bot_access_check, admin_access_check
+from utils.access import has_bot_access, bot_access_check, admin_access_check, admin_or_event_coordinator_id_check
 from typing import List, Dict, Any, Tuple
 from datetime import datetime, timedelta
 import asyncio
@@ -340,7 +340,7 @@ def setup_teams_command(bot: Bot):
         description="Generate balanced teams from members with the event role using Wise Old Man stats",
         guild=discord.Object(id=721816434790891643)  # Replace with your guild ID
     )
-    @app_commands.checks.has_role(ADMIN_ROLE)
+    @app_commands.check(admin_or_event_coordinator_id_check)
     async def generate_teams(interaction: Interaction):
         await interaction.response.defer()
         
@@ -469,7 +469,7 @@ def setup_teams_command(bot: Bot):
         description="Generate and post team rosters as a message",
         guild=discord.Object(id=1344457562535497779)
     )
-    @app_commands.check(admin_access_check)
+    @app_commands.check(admin_or_event_coordinator_id_check)
     @app_commands.describe(
         channel="Channel to post the rosters in (optional, defaults to current channel)"
     )

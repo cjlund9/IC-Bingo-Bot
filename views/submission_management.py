@@ -4,7 +4,7 @@ from discord import Interaction
 import logging
 from typing import List, Dict, Any
 
-from config import ADMIN_ROLE, EVENT_COORDINATOR_ROLE
+from config import ADMIN_ROLE, EVENT_COORDINATOR_ROLE, ADMIN_ROLE_ID, EVENT_COORDINATOR_ROLE_ID
 from storage import get_tile_progress, remove_tile_submission, mark_tile_submission
 from board import generate_board_image
 from core.update_board import update_board_message
@@ -19,8 +19,11 @@ class SubmissionManagementView(View):
         self.drop = drop
 
     async def interaction_allowed(self, interaction: Interaction) -> bool:
-        roles = [r.name for r in interaction.user.roles]
-        return EVENT_COORDINATOR_ROLE in roles or ADMIN_ROLE in roles
+        user_role_ids = [r.id for r in interaction.user.roles]
+        user_role_names = [r.name for r in interaction.user.roles]
+        if (ADMIN_ROLE_ID and int(ADMIN_ROLE_ID) in user_role_ids) or (EVENT_COORDINATOR_ROLE_ID and int(EVENT_COORDINATOR_ROLE_ID) in user_role_ids):
+            return True
+        return EVENT_COORDINATOR_ROLE in user_role_names or ADMIN_ROLE in user_role_names
 
     @discord.ui.button(label="✅ Approve", style=discord.ButtonStyle.success)
     async def approve(self, interaction: Interaction, button: Button):
@@ -114,8 +117,11 @@ class SubmissionRemovalView(View):
         self.submissions = []
 
     async def interaction_allowed(self, interaction: Interaction) -> bool:
-        roles = [r.name for r in interaction.user.roles]
-        return ADMIN_ROLE in roles  # Only admins can remove submissions
+        user_role_ids = [r.id for r in interaction.user.roles]
+        user_role_names = [r.name for r in interaction.user.roles]
+        if ADMIN_ROLE_ID and int(ADMIN_ROLE_ID) in user_role_ids:
+            return True
+        return ADMIN_ROLE in user_role_names
 
     async def load_submissions(self):
         """Load submissions for the tile"""
