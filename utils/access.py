@@ -1,6 +1,9 @@
 import discord
 from discord import app_commands
 from config import ADMIN_ROLE, EVENT_COORDINATOR_ROLE, ADMIN_ROLE_ID, EVENT_COORDINATOR_ROLE_ID
+import logging
+
+logger = logging.getLogger("access_check")
 
 def has_bot_access(member: discord.Member) -> bool:
     """Check if a member has access to bot commands (leadership, event coordinator, or team member)"""
@@ -38,7 +41,9 @@ def has_bot_access(member: discord.Member) -> bool:
 def has_admin_access(member: discord.Member) -> bool:
     """Check if a member has admin access (leadership only)"""
     guild = member.guild
-    
+    user_role_ids = [r.id for r in member.roles]
+    user_role_names = [r.name for r in member.roles]
+    logger.info(f"[has_admin_access] User: {member} | Role IDs: {user_role_ids} | Role Names: {user_role_names} | Expected ADMIN_ROLE_ID: {ADMIN_ROLE_ID} | ADMIN_ROLE: {ADMIN_ROLE}")
     # Check for leadership role only
     leadership_role = None
     if ADMIN_ROLE_ID:
@@ -53,7 +58,9 @@ def has_admin_access(member: discord.Member) -> bool:
 def has_leadership_or_event_coordinator_access(member: discord.Member) -> bool:
     """Check if a member has leadership or event coordinator access"""
     guild = member.guild
-    
+    user_role_ids = [r.id for r in member.roles]
+    user_role_names = [r.name for r in member.roles]
+    logger.info(f"[has_leadership_or_event_coordinator_access] User: {member} | Role IDs: {user_role_ids} | Role Names: {user_role_names} | Expected ADMIN_ROLE_ID: {ADMIN_ROLE_ID}, EVENT_COORDINATOR_ROLE_ID: {EVENT_COORDINATOR_ROLE_ID} | ADMIN_ROLE: {ADMIN_ROLE}, EVENT_COORDINATOR_ROLE: {EVENT_COORDINATOR_ROLE}")
     # Check for leadership role
     leadership_role = None
     if ADMIN_ROLE_ID:
@@ -77,7 +84,9 @@ def has_leadership_or_event_coordinator_access(member: discord.Member) -> bool:
 def has_team_member_access(member: discord.Member) -> bool:
     """Check if a member has team member access (leadership, event coordinator, or team member)"""
     guild = member.guild
-    
+    user_role_ids = [r.id for r in member.roles]
+    user_role_names = [r.name for r in member.roles]
+    logger.info(f"[has_team_member_access] User: {member} | Role IDs: {user_role_ids} | Role Names: {user_role_names} | Expected ADMIN_ROLE_ID: {ADMIN_ROLE_ID}, EVENT_COORDINATOR_ROLE_ID: {EVENT_COORDINATOR_ROLE_ID} | ADMIN_ROLE: {ADMIN_ROLE}, EVENT_COORDINATOR_ROLE: {EVENT_COORDINATOR_ROLE}")
     # Check for leadership role
     leadership_role = None
     if ADMIN_ROLE_ID:
@@ -134,6 +143,7 @@ def team_member_access_check(interaction: discord.Interaction) -> bool:
 def admin_or_event_coordinator_id_check(interaction: discord.Interaction) -> bool:
     user_role_ids = [r.id for r in interaction.user.roles]
     user_role_names = [r.name for r in interaction.user.roles]
+    logger.info(f"[admin_or_event_coordinator_id_check] User: {interaction.user} | Role IDs: {user_role_ids} | Role Names: {user_role_names} | Expected ADMIN_ROLE_ID: {ADMIN_ROLE_ID}, EVENT_COORDINATOR_ROLE_ID: {EVENT_COORDINATOR_ROLE_ID} | ADMIN_ROLE: {ADMIN_ROLE}, EVENT_COORDINATOR_ROLE: {EVENT_COORDINATOR_ROLE}")
     if (ADMIN_ROLE_ID and int(ADMIN_ROLE_ID) in user_role_ids) or (EVENT_COORDINATOR_ROLE_ID and int(EVENT_COORDINATOR_ROLE_ID) in user_role_ids):
         return True
     if ADMIN_ROLE in user_role_names or EVENT_COORDINATOR_ROLE in user_role_names:
