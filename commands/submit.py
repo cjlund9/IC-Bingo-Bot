@@ -98,12 +98,41 @@ async def item_autocomplete(interaction: Interaction, current: str):
         
         # Check if this is a points-based tile
         if "points" in drops and drops_needed > 1:
-            # For points-based tiles, allow numeric input
-            if current.isdigit():
+            # For points-based tiles, show a special option that will trigger the modal
+            if not current:
+                return [
+                    app_commands.Choice(
+                        name="📝 Use Points Input Form (Recommended)", 
+                        value="points_modal"
+                    ),
+                    app_commands.Choice(
+                        name="💡 Or type points directly (e.g., 1500)", 
+                        value="points_direct"
+                    )
+                ]
+            elif current == "points_modal":
+                return [
+                    app_commands.Choice(
+                        name="📝 Use Points Input Form (Recommended)", 
+                        value="points_modal"
+                    )
+                ]
+            elif current.isdigit():
+                # If user typed a number directly, allow it
                 points = int(current)
-                return [app_commands.Choice(name=f"Submit {points:,} points", value=str(points))]
+                return [
+                    app_commands.Choice(
+                        name=f"📝 Submit {points:,} points", 
+                        value=str(points)
+                    )
+                ]
             else:
-                return [app_commands.Choice(name="Enter points earned (e.g., 1500)", value="points_input")]
+                return [
+                    app_commands.Choice(
+                        name="💡 Type points earned (e.g., 1500)", 
+                        value="points_direct"
+                    )
+                ]
         
         # Check if this is the Chugging Barrel tile (special resin points)
         if tile_name == "Chugging Barrel":
@@ -203,6 +232,33 @@ def setup_submit_command(bot: Bot):
                 return
 
             team = get_user_team(member)
+
+            # Check if user selected the points modal option
+            if item == "points_modal":
+                # Show the points input button view
+                from views.points_button import PointsTileButtonView
+                
+                # Get the target points for this tile
+                conn = sqlite3.connect('leaderboard.db')
+                cursor = conn.cursor()
+                cursor.execute('SELECT drops_needed FROM bingo_tiles WHERE tile_index = ?', (tile_index,))
+                target_points = cursor.fetchone()[0]
+                conn.close()
+                
+                embed = discord.Embed(
+                    title="📝 Points Input Required",
+                    description=f"**Tile:** {tile_name}\n**Target:** {target_points:,} points\n\nPlease click the button below to enter your points in a form.",
+                    color=0x0099FF
+                )
+                
+                view = PointsTileButtonView(tile_name, tile_index, target_points)
+                
+                await interaction.followup.send(
+                    embed=embed,
+                    view=view,
+                    ephemeral=True
+                )
+                return
 
             # Check if this is a points-based submission
             is_points_submission = False
