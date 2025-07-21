@@ -47,7 +47,7 @@ async def tile_autocomplete(interaction: Interaction, current: str):
             # Create display name with indicator
             display_name = f"{tile_indicator}: {tile_name}"
             
-            # Check if current input matches either the indicator or the tile name
+            # Only return tile_index as value (never name)
             if (current.lower() in display_name.lower() or 
                 current.lower() in tile_indicator.lower() or 
                 current.lower() in tile_name.lower()):
@@ -215,23 +215,31 @@ def setup_submit_command(bot: Bot):
                 await interaction.followup.send("❌ File too large. Please upload a smaller screenshot (max 25MB).", ephemeral=True)
                 return
 
+            # Validate tile index is an integer and in range
             try:
                 tile_index = int(tile)
-                # Get tile data from database
-                conn = sqlite3.connect('leaderboard.db')
-                cursor = conn.cursor()
-                cursor.execute('SELECT id, name FROM bingo_tiles WHERE tile_index = ?', (tile_index,))
-                tile_row = cursor.fetchone()
-                conn.close()
-                
-                if not tile_row:
-                    await interaction.followup.send("❌ Invalid tile selection.", ephemeral=True)
-                    return
-                
-                tile_id, tile_name = tile_row
-            except (ValueError, IndexError):
+            except ValueError:
+                await interaction.followup.send("❌ Invalid tile selection. Please select a tile from the list, not by typing the name.", ephemeral=True)
+                return
+
+            from config import load_placeholders
+            placeholders = load_placeholders()
+            if not (0 <= tile_index < len(placeholders)):
+                await interaction.followup.send("❌ Invalid tile selection. Please select a valid tile from the list.", ephemeral=True)
+                return
+
+            # Get tile data from database
+            conn = sqlite3.connect('leaderboard.db')
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, name FROM bingo_tiles WHERE tile_index = ?', (tile_index,))
+            tile_row = cursor.fetchone()
+            conn.close()
+            
+            if not tile_row:
                 await interaction.followup.send("❌ Invalid tile selection.", ephemeral=True)
                 return
+            
+            tile_id, tile_name = tile_row
 
             team = get_user_team(member)
 
@@ -271,6 +279,9 @@ def setup_submit_command(bot: Bot):
             else:
                 drop_name = item
                 quantity = 1
+
+            # Log tile index and name for debugging
+            logger.info(f"[SUBMIT] Submitting for tile_index={tile_index}, tile_name={tile_name}, is_points_tile={is_points_tile}")
 
             # Insert submission into database
             conn = sqlite3.connect('leaderboard.db')
