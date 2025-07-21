@@ -28,6 +28,7 @@ from commands.sync import setup_sync_command
 from commands.teams_consolidated import setup_teams_consolidated_command
 from commands.stats import setup_stats_command
 from commands.leaderboard_cmd import setup_leaderboard_commands
+from commands.teams import setup_teams_command
 # from commands.shop_cmd import setup_shop_commands
 from commands.monitor import setup_monitor_command
 from commands.csv_export import setup_csv_export_command
@@ -294,6 +295,7 @@ async def main():
         setup_progress_command(bot)
         setup_manage_command(bot)
         setup_sync_command(bot)
+        setup_teams_command(bot)
         setup_teams_consolidated_command(bot)
         setup_stats_command(bot)
         # setup_leaderboard_commands(bot)  # Temporarily disabled
