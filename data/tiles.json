@@ -350,10 +350,9 @@
     "drops_needed": 3
   },
   {
-    "name": "Master Wand",
+    "name": "Imcando Hammer",
     "drops_required": [
-      "Master Wand",
-      "Points"
+      "Imcando Hamer"
     ],
     "drops_needed": 1
   },
@@ -743,10 +742,9 @@
     "drops_needed": 1
   },
   {
-    "name": "Colossal Blade",
+    "name": "Mask of Rannul",
     "drops_required": [
-      "Colossal Blade",
-      "Points"
+      "Mask of Rannul"
     ],
     "drops_needed": 1
   },
@@ -959,9 +957,9 @@
     "drops_needed": 1
   },
   {
-    "name": "10x fletching minigame unique",
-    "drops_required": ["Fletching unique"],
-    "drops_needed": 10
+    "name": "2x Pharaoh's sceptre",
+    "drops_required": ["Pharaoh's sceptre"],
+    "drops_needed": 2
   },
   {
     "name": "Any Chaos Elder Robe Piece",

@@ -22,6 +22,9 @@ class PointsReviewView(View):
     async def send_to_review(self, interaction: Interaction, button: Button):
         """Send the points submission to the review channel"""
         try:
+            logger.info(f"Starting send_to_review for submission {self.submission_id}")
+            logger.info(f"User: {self.user.id}, Team: {self.team}, Tile: {self.tile_name}")
+            logger.info(f"Screenshot file present: {self.screenshot_file is not None}")
             # Get the submission details
             import sqlite3
             conn = sqlite3.connect('leaderboard.db')
@@ -62,17 +65,21 @@ class PointsReviewView(View):
             )
 
             # Send to review channel
+            logger.info(f"Attempting to send to review channel: {config.REVIEW_CHANNEL_NAME}")
             if self.screenshot_file:
+                logger.info("Sending with screenshot file")
                 await review_channel.send(
                     content=submission_content,
                     file=self.screenshot_file,
                     view=view
                 )
             else:
+                logger.info("Sending without screenshot file")
                 await review_channel.send(
                     content=submission_content,
                     view=view
                 )
+            logger.info("Successfully sent to review channel")
 
             # Update the original message to show success
             embed = discord.Embed(
@@ -93,10 +100,28 @@ class PointsReviewView(View):
 
         except Exception as e:
             logger.error(f"Error sending points submission to review: {e}")
-            await interaction.response.send_message(
-                "❌ An error occurred while sending your submission to review. Please try again.",
-                ephemeral=True
-            )
+            logger.error(f"Error type: {type(e).__name__}")
+            logger.error(f"Error details: {str(e)}")
+            
+            # Try to send error message, but handle interaction conflicts
+            try:
+                await interaction.response.send_message(
+                    "❌ An error occurred while sending your submission to review. Please try again.",
+                    ephemeral=True
+                )
+            except discord.errors.HTTPException as http_error:
+                if http_error.code == 40060:  # Interaction already acknowledged
+                    try:
+                        await interaction.followup.send(
+                            "❌ An error occurred while sending your submission to review. Please try again.",
+                            ephemeral=True
+                        )
+                    except:
+                        logger.error("Could not send any error message to user")
+                else:
+                    logger.error(f"HTTP error in error handler: {http_error}")
+            except Exception as error_handler_error:
+                logger.error(f"Error in error handler: {error_handler_error}")
 
     @discord.ui.button(label="❌ Cancel", style=discord.ButtonStyle.secondary)
     async def cancel(self, interaction: Interaction, button: Button):
