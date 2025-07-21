@@ -160,9 +160,6 @@ async def background_maintenance():
             # Clean up temporary files
             cleanup_temp_files()
             
-            # Check for board release time
-            await check_board_release_time()
-            
             # Log performance stats every 10 minutes
             if int(time.time()) % 600 < 30:  # Every 10 minutes
                 stats = performance_monitor.get_performance_stats()
@@ -177,48 +174,6 @@ async def background_maintenance():
         except Exception as e:
             logger.error(f"Error in background maintenance: {e}")
             await asyncio.sleep(300)
-
-
-async def check_board_release_time():
-    """Check if it's time to release the board and post it automatically"""
-    try:
-        from database import DatabaseManager
-        from datetime import datetime, timezone
-        
-        db = DatabaseManager()
-        release_time_str = db.get_board_release_time()
-        
-        if not release_time_str:
-            return
-        
-        release_time = datetime.fromisoformat(release_time_str.replace('Z', '+00:00'))
-        if release_time.tzinfo is None:
-            release_time = release_time.replace(tzinfo=timezone.utc)
-        
-        now = datetime.now(timezone.utc)
-        
-        # Check if release time has passed (within 5 minutes to account for task timing)
-        if now >= release_time and (now - release_time).total_seconds() < 300:
-            logger.info("🎉 Board release time reached! Posting board automatically...")
-            
-            # Get the guild
-            import config
-            guild = bot.get_guild(int(config.GUILD_ID))
-            if not guild:
-                logger.error("Could not find guild for board release")
-                return
-            
-            # Post board to all channels
-            from core.update_board import update_all_team_boards
-            await update_all_team_boards(guild, bot.user)
-            
-            # Clear the release time since it's been used
-            db.clear_board_release_time()
-            
-            logger.info("✅ Board posted successfully and release time cleared")
-            
-    except Exception as e:
-        logger.error(f"Error checking board release time: {e}")
 
 
 @bot.event
