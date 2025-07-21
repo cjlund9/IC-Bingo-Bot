@@ -38,18 +38,30 @@ class HoldReviewView(View):
 
         from storage import mark_tile_submission
         success = mark_tile_submission(self.team, self.tile_index, self.submitter.id, self.drop, quantity=1)
-        
-        if success:
+        if not success:
+            logger.error(f"[HOLD APPROVE] Failed to mark tile submission for team={self.team}, tile_index={self.tile_index}, submitter={getattr(self.submitter, 'id', None)}, drop={self.drop}")
+            await interaction.response.send_message("❌ Failed to approve submission in the database. Please contact an admin.", ephemeral=True)
+            return
+        try:
+            from config import load_placeholders
+            placeholders = load_placeholders()
+            from board import generate_board_image
+            image_success = generate_board_image(placeholders, None, team=self.team)
+            if not image_success:
+                logger.error(f"[HOLD APPROVE] Failed to generate board image for team: {self.team}")
+                await interaction.followup.send("❌ Failed to generate board image. Please contact an admin.", ephemeral=True)
+                return
             try:
-                from config import load_placeholders
-                placeholders = load_placeholders()
-                from board import generate_board_image
-                generate_board_image(placeholders, None, team=self.team)
-                logger.info(f"Board image regenerated for team: {self.team}")
                 await update_board_message(interaction.guild, interaction.guild.me, team=self.team)
                 logger.info(f"Board message updated for team: {self.team}")
             except Exception as e:
-                logger.error(f"Error updating board after hold approval: {e}")
+                logger.error(f"Error updating board message in Discord after hold approval: {e}")
+                await interaction.followup.send("❌ Failed to update board message in Discord. Please contact an admin.", ephemeral=True)
+                return
+        except Exception as e:
+            logger.error(f"Error updating board after hold approval: {e}")
+            await interaction.followup.send("❌ Error updating board after approval. Please contact an admin.", ephemeral=True)
+            return
 
         from config import load_placeholders
         placeholders = load_placeholders()
