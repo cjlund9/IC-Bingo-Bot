@@ -116,34 +116,45 @@ def has_team_member_access(member: discord.Member) -> bool:
     
     return False
 
+def _get_member_from_interaction(interaction):
+    member = getattr(interaction, 'user', None)
+    if member and not isinstance(member, discord.Member) and interaction.guild:
+        member = interaction.guild.get_member(member.id)
+    return member
+
 def bot_access_check(interaction: discord.Interaction) -> bool:
     """Custom check for bot access (leadership, event coordinator, or team member)"""
-    if not has_bot_access(interaction.user):
+    member = _get_member_from_interaction(interaction)
+    if not has_bot_access(member):
         raise app_commands.errors.MissingRole(f"{ADMIN_ROLE}, {EVENT_COORDINATOR_ROLE}, or team role")
     return True
 
 def admin_access_check(interaction: discord.Interaction) -> bool:
     """Custom check for admin access (leadership only)"""
-    if not has_admin_access(interaction.user):
+    member = _get_member_from_interaction(interaction)
+    if not has_admin_access(member):
         raise app_commands.errors.MissingRole(ADMIN_ROLE)
     return True
 
 def leadership_or_event_coordinator_check(interaction: discord.Interaction) -> bool:
     """Custom check for leadership or event coordinator access"""
-    if not has_leadership_or_event_coordinator_access(interaction.user):
+    member = _get_member_from_interaction(interaction)
+    if not has_leadership_or_event_coordinator_access(member):
         raise app_commands.errors.MissingRole(f"{ADMIN_ROLE} or {EVENT_COORDINATOR_ROLE}")
     return True
 
 def team_member_access_check(interaction: discord.Interaction) -> bool:
     """Custom check for team member access (leadership, event coordinator, or team member)"""
-    if not has_team_member_access(interaction.user):
+    member = _get_member_from_interaction(interaction)
+    if not has_team_member_access(member):
         raise app_commands.errors.MissingRole(f"{ADMIN_ROLE}, {EVENT_COORDINATOR_ROLE}, or team role")
     return True 
 
 def admin_or_event_coordinator_id_check(interaction: discord.Interaction) -> bool:
-    user_role_ids = [r.id for r in interaction.user.roles]
-    user_role_names = [r.name for r in interaction.user.roles]
-    logger.info(f"[admin_or_event_coordinator_id_check] User: {interaction.user} | Role IDs: {user_role_ids} | Role Names: {user_role_names} | Expected ADMIN_ROLE_ID: {ADMIN_ROLE_ID}, EVENT_COORDINATOR_ROLE_ID: {EVENT_COORDINATOR_ROLE_ID} | ADMIN_ROLE: {ADMIN_ROLE}, EVENT_COORDINATOR_ROLE: {EVENT_COORDINATOR_ROLE}")
+    member = _get_member_from_interaction(interaction)
+    user_role_ids = [r.id for r in member.roles] if member else []
+    user_role_names = [r.name for r in member.roles] if member else []
+    logger.info(f"[admin_or_event_coordinator_id_check] User: {member} | Role IDs: {user_role_ids} | Role Names: {user_role_names} | Expected ADMIN_ROLE_ID: {ADMIN_ROLE_ID}, EVENT_COORDINATOR_ROLE_ID: {EVENT_COORDINATOR_ROLE_ID} | ADMIN_ROLE: {ADMIN_ROLE}, EVENT_COORDINATOR_ROLE: {EVENT_COORDINATOR_ROLE}")
     if (ADMIN_ROLE_ID and int(ADMIN_ROLE_ID) in user_role_ids) or (EVENT_COORDINATOR_ROLE_ID and int(EVENT_COORDINATOR_ROLE_ID) in user_role_ids):
         return True
     if ADMIN_ROLE in user_role_names or EVENT_COORDINATOR_ROLE in user_role_names:
