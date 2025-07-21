@@ -23,32 +23,32 @@ class TeamBalancer:
         self.target_team_size = self.n_players // self.n_teams
         self.extra_players = self.n_players % self.n_teams
     
-    def fetch_player_stats(self, rsn: str) -> Dict[str, Any]:
-        """Fetch player stats from WiseOldMan API"""
+    async def fetch_player_stats(self, rsn: str) -> Dict[str, Any]:
+        """Fetch player stats from WiseOldMan API asynchronously"""
+        import aiohttp
         try:
             url = f'https://api.wiseoldman.net/v2/players/{rsn}'
-            response = requests.get(url, timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                ehb = data.get('ehb', 0)
-                ehp = data.get('ehp', 0)
-                slayer_level = data.get('latestSnapshot', {}).get('data', {}).get('skills', {}).get('slayer', {}).get('level', 1)
-                
-                return {
-                    'ehb': ehb,
-                    'ehp': ehp,
-                    'slayer_level': slayer_level,
-                    'total_score': ehb + ehp + (slayer_level * 0.1)  # Weighted score
-                }
-            else:
-                logger.warning(f"Failed to fetch stats for {rsn}: {response.status_code}")
-                return {
-                    'ehb': 0,
-                    'ehp': 0,
-                    'slayer_level': 1,
-                    'total_score': 0.1
-                }
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, timeout=10) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        ehb = data.get('ehb', 0)
+                        ehp = data.get('ehp', 0)
+                        slayer_level = data.get('latestSnapshot', {}).get('data', {}).get('skills', {}).get('slayer', {}).get('level', 1)
+                        return {
+                            'ehb': ehb,
+                            'ehp': ehp,
+                            'slayer_level': slayer_level,
+                            'total_score': ehb + ehp + (slayer_level * 0.1)
+                        }
+                    else:
+                        logger.warning(f"Failed to fetch stats for {rsn}: {response.status}")
+                        return {
+                            'ehb': 0,
+                            'ehp': 0,
+                            'slayer_level': 1,
+                            'total_score': 0.1
+                        }
         except Exception as e:
             logger.warning(f"Failed to fetch stats for {rsn}: {e}")
             return {

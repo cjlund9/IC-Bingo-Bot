@@ -6,6 +6,8 @@ from typing import Optional, List, Dict, Any, Tuple
 import requests
 from datetime import datetime
 from utils.access import admin_access_check
+import aiohttp
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -14,32 +16,27 @@ class TeamBalancer:
         self.players = players
         self.stats_cache = {}
         
-    def fetch_player_stats(self, rsn: str) -> Dict[str, Any]:
-        """Fetch player stats from Wise Old Man API"""
+    async def fetch_player_stats(self, rsn: str) -> Dict[str, Any]:
+        """Fetch player stats from Wise Old Man API asynchronously"""
         if rsn in self.stats_cache:
             return self.stats_cache[rsn]
-            
         try:
             url = f"https://api.wiseoldman.net/v2/players/{rsn}"
-            response = requests.get(url, timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                
-                # Extract relevant stats
-                stats = {
-                    'ehb': data.get('ehb', 0),
-                    'ehp': data.get('ehp', 0),
-                    'slayer_level': data.get('slayer', {}).get('level', 1),
-                    'overall_level': data.get('overall', {}).get('level', 1)
-                }
-                
-                self.stats_cache[rsn] = stats
-                return stats
-            else:
-                logger.warning(f"Failed to fetch stats for {rsn}: {response.status_code}")
-                return {'ehb': 0, 'ehp': 0, 'slayer_level': 1, 'overall_level': 1}
-                
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, timeout=10) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        stats = {
+                            'ehb': data.get('ehb', 0),
+                            'ehp': data.get('ehp', 0),
+                            'slayer_level': data.get('slayer', {}).get('level', 1),
+                            'overall_level': data.get('overall', {}).get('level', 1)
+                        }
+                        self.stats_cache[rsn] = stats
+                        return stats
+                    else:
+                        logger.warning(f"Failed to fetch stats for {rsn}: {response.status}")
+                        return {'ehb': 0, 'ehp': 0, 'slayer_level': 1, 'overall_level': 1}
         except Exception as e:
             logger.error(f"Error fetching stats for {rsn}: {e}")
             return {'ehb': 0, 'ehp': 0, 'slayer_level': 1, 'overall_level': 1}
@@ -83,6 +80,7 @@ class TeamBalancer:
         for player in self.players:
             stats = await self.fetch_player_stats(player['rsn'])
             player.update(stats)
+            await asyncio.sleep(5)
         
         # Sort players by overall strength (EHB + EHP + Slayer)
         sorted_players = sorted(self.players, 
