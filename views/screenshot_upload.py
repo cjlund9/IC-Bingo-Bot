@@ -60,8 +60,21 @@ class ScreenshotUploadView(View):
                 )
                 return
 
+            # Create the submission in the database first
+            conn = sqlite3.connect('leaderboard.db')
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                INSERT INTO bingo_submissions (team_name, tile_id, user_id, drop_name, quantity, status)
+                VALUES (?, ?, ?, ?, ?, 'pending')
+            ''', (self.team, self.tile_index, self.user.id, "points", self.points))
+            
+            submission_id = cursor.lastrowid
+            conn.commit()
+            conn.close()
+
             # Create the approval view
-            view = ApprovalView(self.user, self.tile_index, self.team, drop=f"{self.points:,} points")
+            view = ApprovalView(self.user, self.tile_index, self.team, drop=f"{self.points:,} points", submission_id=submission_id)
 
             # Create submission message
             submission_content = (

@@ -8,12 +8,13 @@ from config import EVENT_COORDINATOR_ROLE, ADMIN_ROLE, HOLD_REVIEW_CHANNEL_NAME
 from core.update_board import update_board_message
 
 class ApprovalView(View):
-    def __init__(self, submitter: discord.User, tile_index: int, team: str, drop: str):
+    def __init__(self, submitter: discord.User, tile_index: int, team: str, drop: str, submission_id: int = None):
         super().__init__(timeout=None)
         self.submitter = submitter
         self.tile_index = tile_index
         self.team = team
-        self.drop = drop  # 🆕 Store drop
+        self.drop = drop
+        self.submission_id = submission_id  # Store submission ID for approval
 
     async def interaction_allowed(self, interaction: Interaction) -> bool:
         roles = [r.name for r in interaction.user.roles]
@@ -27,9 +28,14 @@ class ApprovalView(View):
 
         await interaction.response.defer(ephemeral=True)
 
-        # Use the new storage system
-        from storage import mark_tile_submission
-        success = mark_tile_submission(self.team, self.tile_index, self.submitter.id, self.drop, quantity=1)
+        # Use the new approval system
+        from storage import approve_submission
+        if self.submission_id:
+            success = approve_submission(self.submission_id, interaction.user.id)
+        else:
+            # Fallback to old system if no submission_id
+            from storage import mark_tile_submission
+            success = mark_tile_submission(self.team, self.tile_index, self.submitter.id, self.drop, quantity=1)
         
         if success:
             from config import load_placeholders

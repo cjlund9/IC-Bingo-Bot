@@ -57,8 +57,8 @@ def get_tile_progress(team: str, tile_index: int) -> Dict[str, Any]:
         ''', (team, tile_index))
         tile_row = cursor.fetchone()
         
-        # Get submissions
-        cursor.execute('''SELECT user_id, drop_name, quantity FROM bingo_submissions WHERE team_name = ? AND tile_id = ?''', (team, tile_index))
+        # Get approved submissions only
+        cursor.execute('''SELECT user_id, drop_name, quantity FROM bingo_submissions WHERE team_name = ? AND tile_id = ? AND status = 'approved' ''', (team, tile_index))
         submissions = cursor.fetchall()
         
         conn.close()
@@ -234,4 +234,99 @@ def remove_tile_submission(team: str, tile_index: int, submission_index: int) ->
         return True
     except Exception as e:
         logger.error(f"Error removing tile submission: {e}")
+        return False
+
+def approve_submission(submission_id: int, approver_id: int) -> bool:
+    """Approve an existing submission by updating its status."""
+    try:
+        conn = get_db_conn()
+        cursor = conn.cursor()
+        
+        # Get the submission details
+        cursor.execute('''
+            SELECT team_name, tile_id, user_id, drop_name, quantity 
+            FROM bingo_submissions 
+            WHERE id = ?
+        ''', (submission_id,))
+        submission = cursor.fetchone()
+        
+        if not submission:
+            conn.close()
+            return False
+            
+        team_name, tile_id, user_id, drop_name, quantity = submission
+        
+        # Update the submission status to approved
+        cursor.execute('''
+            UPDATE bingo_submissions 
+            SET status = 'approved', approved_at = CURRENT_TIMESTAMP, approved_by = ?
+            WHERE id = ?
+        ''', (approver_id, submission_id))
+        
+        # Update team progress
+        cursor.execute('''SELECT completed_count, total_required FROM bingo_team_progress WHERE team_name = ? AND tile_id = ?''', (team_name, tile_id))
+        progress_row = cursor.fetchone()
+        
+        if progress_row:
+            current_count = progress_row[0]
+            total_required = progress_row[1]
+            
+            # For points-based tiles, add the quantity as points
+            if drop_name == "points":
+                new_count = current_count + quantity
+            else:
+                new_count = current_count + quantity
+                
+            cursor.execute('''UPDATE bingo_team_progress SET completed_count = ? WHERE team_name = ? AND tile_id = ?''', (new_count, team_name, tile_id))
+        else:
+            # Get total_required from tiles
+            cursor.execute('SELECT drops_needed FROM bingo_tiles WHERE id = ?', (tile_id,))
+            tile_row = cursor.fetchone()
+            if tile_row:
+                total_required = tile_row[0]
+                cursor.execute('''INSERT INTO bingo_team_progress (team_name, tile_id, completed_count, total_required) VALUES (?, ?, ?, ?)''', (team_name, tile_id, quantity, total_required))
+            
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        logger.error(f"Error approving submission: {e}")
+        return False
+
+def deny_submission(submission_id: int, denier_id: int, reason: str = None) -> bool:
+    """Deny an existing submission by updating its status."""
+    try:
+        conn = get_db_conn()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            UPDATE bingo_submissions 
+            SET status = 'denied', denied_at = CURRENT_TIMESTAMP, denied_by = ?, denial_reason = ?
+            WHERE id = ?
+        ''', (denier_id, reason, submission_id))
+        
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        logger.error(f"Error denying submission: {e}")
+        return False
+
+def hold_submission(submission_id: int, holder_id: int, reason: str = None) -> bool:
+    """Put an existing submission on hold by updating its status."""
+    try:
+        conn = get_db_conn()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            UPDATE bingo_submissions 
+            SET status = 'hold', hold_at = CURRENT_TIMESTAMP, hold_by = ?, hold_reason = ?
+            WHERE id = ?
+        ''', (holder_id, reason, submission_id))
+        
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        logger.error(f"Error holding submission: {e}")
         return False
