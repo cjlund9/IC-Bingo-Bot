@@ -197,7 +197,7 @@ def setup_submit_command(bot: Bot):
     @app_commands.check(team_member_access_check)
     @app_commands.describe(
         tile="Select the tile you completed",
-        item="Which item did you get?",
+        item="For point tiles, enter the number of points earned. For others, enter the drop name.",
         attachment="Upload screenshot"
     )
     @app_commands.autocomplete(tile=tile_autocomplete, item=item_autocomplete)
@@ -259,51 +259,29 @@ def setup_submit_command(bot: Bot):
                 is_points_tile = True
                 target_points = drops_needed
 
-            # Check if this is a points-based submission
-            is_points_submission = False
-            points_value = 0
-            
-            # Check if the tile is points-based and the item is numeric
+            # --- SIMPLIFIED POINT TILE LOGIC ---
+            if is_points_tile:
+                # Validate that item is a positive integer
+                if not item.isdigit() or int(item) <= 0:
+                    await interaction.followup.send("❌ For point tiles, please enter a positive number of points in the 'item' field.", ephemeral=True)
+                    return
+                points_value = int(item)
+                drop_name = "points"
+                quantity = points_value
+            else:
+                drop_name = item
+                quantity = 1
+
+            # Insert submission into database
             conn = sqlite3.connect('leaderboard.db')
             cursor = conn.cursor()
             cursor.execute('''
-                SELECT bt.drops_needed, btd.drop_name 
-                FROM bingo_tiles bt 
-                LEFT JOIN bingo_tile_drops btd ON bt.id = btd.tile_id 
-                WHERE bt.tile_index = ?
-            ''', (tile_index,))
-            
-            rows = cursor.fetchall()
+                INSERT INTO bingo_submissions (team_name, tile_id, user_id, drop_name, quantity, status)
+                VALUES (?, ?, ?, ?, ?, 'pending')
+            ''', (team, tile_id, member.id, drop_name, quantity))
+            submission_id = cursor.lastrowid
+            conn.commit()
             conn.close()
-            
-            drops_needed = rows[0][0] if rows else 1
-            drops = [row[1] for row in rows if row[1] is not None]
-            
-            if "points" in drops and drops_needed > 1 and item.isdigit():
-                is_points_submission = True
-                points_value = int(item)
-                if points_value <= 0:
-                    await interaction.followup.send("❌ Points must be greater than 0.", ephemeral=True)
-                    return
-            
-            # Check if this is a resin submission for Chugging Barrel
-            if tile_name == "Chugging Barrel" and ":" in item:
-                try:
-                    resin_name, value_str = item.split(":", 1)
-                    if value_str.isdigit():
-                        # This is a quantity submission (e.g., "Lye resin:1000")
-                        quantity = int(value_str)
-                        points_value = quantity  # Store the quantity, not points
-                        is_points_submission = True
-                        item = resin_name  # Use the resin name for display
-                    else:
-                        # This is a points submission (legacy format)
-                        points_value = int(value_str)
-                        is_points_submission = True
-                        item = resin_name
-                except (ValueError, IndexError):
-                    await interaction.followup.send("❌ Invalid resin submission format.", ephemeral=True)
-                    return
 
             review_channel = discord.utils.get(interaction.guild.text_channels, name=config.REVIEW_CHANNEL_NAME)
             if not review_channel:
@@ -320,65 +298,15 @@ def setup_submit_command(bot: Bot):
                 await interaction.followup.send("❌ Failed to process attachment. Please try again.", ephemeral=True)
                 return
 
-            # Create the submission in the database first
-            conn = sqlite3.connect('leaderboard.db')
-            cursor = conn.cursor()
-            
-            # For points-based tiles, create a placeholder submission that will be updated by the modal
-            if is_points_tile:
-                drop_name = "points_placeholder"
-                quantity = 0  # Will be updated by modal
-            elif is_points_submission:
-                drop_name = "points" if tile_name != "Chugging Barrel" else item
-                quantity = points_value
-            else:
-                drop_name = item
-                quantity = 1
-                
-            cursor.execute('''
-                INSERT INTO bingo_submissions (team_name, tile_id, user_id, drop_name, quantity, status)
-                VALUES (?, ?, ?, ?, ?, 'pending')
-            ''', (team, tile_id, member.id, drop_name, quantity))
-            
-            submission_id = cursor.lastrowid
-            conn.commit()
-            conn.close()
-
-            # For points-based tiles, show points input modal after submission
-            if is_points_tile:
-                from views.points_button import PointsTileButtonView
-                
-                embed = discord.Embed(
-                    title="📝 Points Input Required",
-                    description=f"**Tile:** {tile_name}\n**Target:** {target_points:,} points\n\nYour submission has been created. Please click the button below to enter your points.",
-                    color=0x0099FF
-                )
-                
-                # Pass the screenshot file to the points button view
-                view = PointsTileButtonView(tile_name, tile_id, target_points, submission_id, file)
-                
-                await interaction.followup.send(
-                    embed=embed,
-                    view=view,
-                    ephemeral=True
-                )
-                return
-            else:
-                view = ApprovalView(member, tile_id, team, drop=item, submission_id=submission_id)
+            from views.approval import ApprovalView
+            view = ApprovalView(member, tile_id, team, drop=drop_name if not is_points_tile else f"{points_value:,} points", submission_id=submission_id)
 
             # Create submission message
-            if is_points_submission:
-                if tile_name == "Chugging Barrel" and ":" in item:
-                    # This was a resin submission, show both resin and points
-                    submission_content = (
-                        f"📥 Submission from {member.mention} for **{tile_name}** (Team: {team})\n"
-                        f"Resin: **{item}** ({points_value:,} points)"
-                    )
-                else:
-                    submission_content = (
-                        f"📥 Submission from {member.mention} for **{tile_name}** (Team: {team})\n"
-                        f"Points: **{points_value:,}**"
-                    )
+            if is_points_tile:
+                submission_content = (
+                    f"📥 Points Submission from {member.mention} for **{tile_name}** (Team: {team})\n"
+                    f"Points: **{points_value:,}**"
+                )
             else:
                 submission_content = (
                     f"📥 Submission from {member.mention} for **{tile_name}** (Team: {team})\n"
