@@ -250,23 +250,39 @@ async def on_app_command_error(interaction: discord.Interaction, error: app_comm
     """Handle application command errors"""
     logger.error(f"Command error: {error}")
     
-    if isinstance(error, app_commands.errors.MissingRole):
-        await interaction.response.send_message(
-            "❌ You do not have permission to use this command. Admins only.",
-            ephemeral=True
-        )
-    elif isinstance(error, app_commands.errors.CommandOnCooldown):
-        await interaction.response.send_message(
-            f"⏰ This command is on cooldown. Try again in {error.retry_after:.2f} seconds.",
-            ephemeral=True
-        )
-    else:
-        # For unexpected errors, log them and show a generic message
-        logger.error(f"Unexpected error in command {interaction.command.name}: {error}")
-        await interaction.response.send_message(
-            "❌ An unexpected error occurred. Please try again later.",
-            ephemeral=True
-        )
+    # Check if interaction has already been responded to
+    if interaction.response.is_done():
+        logger.warning(f"Interaction already responded to for command {interaction.command.name}, skipping error response")
+        return
+    
+    try:
+        if isinstance(error, app_commands.errors.MissingRole):
+            await interaction.response.send_message(
+                "❌ You do not have permission to use this command. Admins only.",
+                ephemeral=True
+            )
+        elif isinstance(error, app_commands.errors.CommandOnCooldown):
+            await interaction.response.send_message(
+                f"⏰ This command is on cooldown. Try again in {error.retry_after:.2f} seconds.",
+                ephemeral=True
+            )
+        else:
+            # For unexpected errors, log them and show a generic message
+            logger.error(f"Unexpected error in command {interaction.command.name}: {error}")
+            await interaction.response.send_message(
+                "❌ An unexpected error occurred. Please try again later.",
+                ephemeral=True
+            )
+    except Exception as e:
+        logger.error(f"Error in error handler: {e}")
+        # Try to send a followup message if the response failed
+        try:
+            await interaction.followup.send(
+                "❌ An error occurred while processing your command.",
+                ephemeral=True
+            )
+        except:
+            logger.error("Could not send any error message to user")
 
 
 async def main():

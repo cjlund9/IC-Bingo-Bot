@@ -211,20 +211,27 @@ def setup_progress_command(bot: Bot):
             
         except Exception as e:
             logger.error(f"Error in progress command: {e}")
+            
+            # Check if interaction has already been responded to
+            if interaction.response.is_done():
+                logger.warning("Progress command interaction already responded to, skipping error response")
+                return
+                
             try:
                 await interaction.response.send_message(
                     "❌ An error occurred while loading progress information.",
                     ephemeral=True
                 )
-            except:
+            except Exception as response_error:
+                logger.error(f"Error sending progress error response: {response_error}")
                 # If interaction is already responded to, try followup
                 try:
                     await interaction.followup.send(
                         "❌ An error occurred while loading progress information.",
                         ephemeral=True
                     )
-                except:
-                    logger.error("Could not send error message to user")
+                except Exception as followup_error:
+                    logger.error(f"Could not send error message to user: {followup_error}")
 
     @bot.tree.command(
         name="leaderboard",
