@@ -76,36 +76,35 @@ class TeamBalancer:
     
     async def generate_balanced_teams(self) -> Tuple[List[Dict], List[Dict]]:
         """Generate balanced teams using priority-based balancing"""
-        # Fetch stats for all players
-        for player in self.players:
-            stats = await self.fetch_player_stats(player['rsn'])
-            player.update(stats)
-            await asyncio.sleep(10)
-        
-        # Sort players by overall strength (EHB + EHP + Slayer)
-        sorted_players = sorted(self.players, 
-                              key=lambda p: p['ehb'] + p['ehp'] + p['slayer_level'], 
-                              reverse=True)
-        
-        # Try different starting configurations
-        best_balance = float('inf')
-        best_teams = None
-        
-        for start_idx in range(min(3, len(sorted_players))):
-            team1, team2 = self._try_configuration(sorted_players, start_idx)
-            balance_scores = self.calculate_balance_score(team1, team2)
-            
-            # Calculate balance score (lower is better)
-            balance_score = (balance_scores['size_diff'] * 1000 + 
-                           balance_scores['ehb_diff'] + 
-                           balance_scores['ehp_diff'] + 
-                           balance_scores['slayer_diff'])
-            
-            if balance_score < best_balance:
-                best_balance = balance_score
-                best_teams = (team1, team2)
-        
-        return best_teams or ([], [])
+        import traceback
+        try:
+            for player in self.players:
+                try:
+                    stats = await self.fetch_player_stats(player['rsn'])
+                    player.update(stats)
+                    logger.debug(f"Fetched stats for {player['rsn']}: {stats}")
+                except Exception as e:
+                    logger.error(f"Error fetching stats for {player['rsn']}: {e}\n{traceback.format_exc()}")
+                await asyncio.sleep(10)
+            sorted_players = sorted(self.players, key=lambda p: p['ehb'] + p['ehp'] + p['slayer_level'], reverse=True)
+            best_balance = float('inf')
+            best_teams = None
+            for start_idx in range(min(3, len(sorted_players))):
+                try:
+                    team1, team2 = self._try_configuration(sorted_players, start_idx)
+                    balance_scores = self.calculate_balance_score(team1, team2)
+                    balance_score = (balance_scores['size_diff'] * 1000 + balance_scores['ehb_diff'] + balance_scores['ehp_diff'] + balance_scores['slayer_diff'])
+                    logger.debug(f"Config {start_idx}: team1={len(team1)}, team2={len(team2)}, balance_scores={balance_scores}, balance_score={balance_score}")
+                    if balance_score < best_balance:
+                        best_balance = balance_score
+                        best_teams = (team1, team2)
+                except Exception as e:
+                    logger.error(f"Error in team configuration {start_idx}: {e}\n{traceback.format_exc()}")
+            logger.debug(f"Final teams: team1={len(best_teams[0]) if best_teams else 0}, team2={len(best_teams[1]) if best_teams else 0}")
+            return best_teams or ([], [])
+        except Exception as e:
+            logger.error(f"Error generating balanced teams: {e}\n{traceback.format_exc()}")
+            return [], []
     
     def _try_configuration(self, sorted_players: List[Dict], start_idx: int) -> Tuple[List[Dict], List[Dict]]:
         """Try a specific team configuration"""
