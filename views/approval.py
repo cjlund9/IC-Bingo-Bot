@@ -15,6 +15,14 @@ class ApprovalView(View):
         self.team = team
         self.drop = drop
         self.submission_id = submission_id  # Store submission ID for approval
+        # Strict validation: mark as invalid if tile_index is out of range
+        from config import load_placeholders
+        self.placeholders = load_placeholders()
+        self.is_valid_index = 0 <= self.tile_index < len(self.placeholders)
+        if not self.is_valid_index:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"[APPROVAL INIT] Invalid tile index: {self.tile_index}, placeholders length: {len(self.placeholders)}, submission_id: {self.submission_id}, team: {self.team}, drop: {self.drop}, submitter: {getattr(self.submitter, 'id', None)}")
 
     async def interaction_allowed(self, interaction: Interaction) -> bool:
         # Check by role ID if provided, else by name
@@ -26,6 +34,12 @@ class ApprovalView(View):
 
     @discord.ui.button(label="✅ Accept", style=discord.ButtonStyle.success)
     async def accept(self, interaction: Interaction, button: Button):
+        if not self.is_valid_index:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"[APPROVAL] Attempted to approve invalid tile index: {self.tile_index}, submission_id: {self.submission_id}, team: {self.team}, drop: {self.drop}, submitter: {getattr(self.submitter, 'id', None)}. Approval denied.")
+            await interaction.response.send_message(f"❌ Invalid tile index: {self.tile_index}. Approval denied. Please contact an admin.", ephemeral=True)
+            return
         if not await self.interaction_allowed(interaction):
             await interaction.response.send_message("❌ Only leadership or event coordinators can accept submissions.", ephemeral=True)
             return
@@ -89,6 +103,12 @@ class ApprovalView(View):
 
     @discord.ui.button(label="❌ Deny", style=discord.ButtonStyle.danger)
     async def deny(self, interaction: Interaction, button: Button):
+        if not self.is_valid_index:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"[APPROVAL] Attempted to deny invalid tile index: {self.tile_index}, submission_id: {self.submission_id}, team: {self.team}, drop: {self.drop}, submitter: {getattr(self.submitter, 'id', None)}. Denial denied.")
+            await interaction.response.send_message(f"❌ Invalid tile index: {self.tile_index}. Denial denied. Please contact an admin.", ephemeral=True)
+            return
         if not await self.interaction_allowed(interaction):
             await interaction.response.send_message("❌ Only leadership or event coordinators can deny submissions.", ephemeral=True)
             return
