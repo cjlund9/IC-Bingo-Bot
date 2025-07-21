@@ -71,7 +71,7 @@ def setup_board_command(bot: Bot):
             await interaction.response.defer(ephemeral=False)
 
             # No completed_dict needed; board image will use DB-backed progress
-            success = generate_board_image(placeholders=None, completed_dict=None, team=team)
+            success = generate_board_image(team=team)
             
             if success and os.path.exists(OUTPUT_FILE):
                 file = discord.File(OUTPUT_FILE)

@@ -21,7 +21,7 @@ def main():
         print(f"✅ Loaded {len(placeholders)} tiles")
         
         # Generate fresh board image
-        success = generate_board_image(placeholders, team="all")
+        success = generate_board_image(placeholders, None, team="all")
         
         if success:
             print("✅ Fresh board image generated successfully!")
