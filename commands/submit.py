@@ -341,13 +341,13 @@ def setup_submit_command(bot: Bot):
             cursor.execute('''
                 INSERT INTO bingo_submissions (team_name, tile_id, user_id, drop_name, quantity, status)
                 VALUES (?, ?, ?, ?, ?, 'pending')
-            ''', (team, tile_index, member.id, drop_name, quantity))
+            ''', (team, tile_id, member.id, drop_name, quantity))
             
             submission_id = cursor.lastrowid
             conn.commit()
             conn.close()
 
-            view = ApprovalView(member, tile_index, team, drop=item, submission_id=submission_id)
+            view = ApprovalView(member, tile_id, team, drop=item, submission_id=submission_id)
 
             # Create submission message
             if is_points_submission:
