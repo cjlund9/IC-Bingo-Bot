@@ -7,7 +7,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 from board import generate_board_image
-from config import ADMIN_ROLE
+from config import ADMIN_ROLE, EVENT_COORDINATOR_ROLE, ADMIN_ROLE_ID, EVENT_COORDINATOR_ROLE_ID
 from core.update_board import update_board_message
 
 class HoldReviewView(View):
@@ -27,13 +27,17 @@ class HoldReviewView(View):
         self.drop = drop  # 🧠 Store the drop item
 
     def is_admin(self, interaction: Interaction) -> bool:
-        """Only leadership can handle hold submissions"""
-        return ADMIN_ROLE in [role.name for role in interaction.user.roles]
+        """Leadership or event coordinators can handle hold submissions"""
+        user_role_ids = [r.id for r in interaction.user.roles]
+        user_role_names = [r.name for r in interaction.user.roles]
+        if (ADMIN_ROLE_ID and int(ADMIN_ROLE_ID) in user_role_ids) or (EVENT_COORDINATOR_ROLE_ID and int(EVENT_COORDINATOR_ROLE_ID) in user_role_ids):
+            return True
+        return EVENT_COORDINATOR_ROLE in user_role_names or ADMIN_ROLE in user_role_names
 
-    @discord.ui.button(label="✅ Approve (Leadership only)", style=discord.ButtonStyle.success)
+    @discord.ui.button(label="✅ Approve (Leadership or Event Coordinator)", style=discord.ButtonStyle.success)
     async def approve(self, interaction: Interaction, button: Button):
         if not self.is_admin(interaction):
-            await interaction.response.send_message("❌ Only leadership can approve submissions from hold.", ephemeral=True)
+            await interaction.response.send_message("❌ Only leadership or event coordinators can approve submissions from hold.", ephemeral=True)
             return
 
         from storage import mark_tile_submission
@@ -43,14 +47,6 @@ class HoldReviewView(View):
             await interaction.response.send_message("❌ Failed to approve submission in the database. Please contact an admin.", ephemeral=True)
             return
         try:
-            from config import load_placeholders
-            placeholders = load_placeholders()
-            from board import generate_board_image
-            image_success = generate_board_image(placeholders, None, team=self.team)
-            if not image_success:
-                logger.error(f"[HOLD APPROVE] Failed to generate board image for team: {self.team}")
-                await interaction.followup.send("❌ Failed to generate board image. Please contact an admin.", ephemeral=True)
-                return
             try:
                 await update_board_message(interaction.guild, interaction.guild.me, team=self.team)
                 logger.info(f"Board message updated for team: {self.team}")
@@ -90,10 +86,10 @@ class HoldReviewView(View):
         )
         await interaction.followup.send("Submission approved and board updated!", ephemeral=True)
 
-    @discord.ui.button(label="❌ Deny (Leadership only)", style=discord.ButtonStyle.danger)
+    @discord.ui.button(label="❌ Deny (Leadership or Event Coordinator)", style=discord.ButtonStyle.danger)
     async def deny(self, interaction: Interaction, button: Button):
         if not self.is_admin(interaction):
-            await interaction.response.send_message("❌ Only leadership can deny submissions from hold.", ephemeral=True)
+            await interaction.response.send_message("❌ Only leadership or event coordinators can deny submissions from hold.", ephemeral=True)
             return
 
         # Pass `drop` here to match updated DenyReasonModal constructor

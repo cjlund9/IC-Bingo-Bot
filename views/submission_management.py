@@ -39,9 +39,6 @@ class SubmissionManagementView(View):
             
             if success:
                 # Update board
-                from config import load_placeholders
-                placeholders = load_placeholders()
-                generate_board_image(placeholders, {}, team=self.team)
                 await update_board_message(interaction.guild, interaction.guild.me, team=self.team)
 
                 # Get tile info for response
@@ -206,9 +203,6 @@ class SubmissionSelect(Select):
             
             if success:
                 # Update board
-                from config import load_placeholders
-                placeholders = load_placeholders()
-                generate_board_image(placeholders, {}, team=view.team)
                 await update_board_message(interaction.guild, interaction.guild.me, team=view.team)
 
                 removed_submission = view.submissions[submission_index]
