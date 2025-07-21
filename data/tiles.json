@@ -890,12 +890,11 @@
     "drops_needed": 2
   },
   {
-    "name": "5000 Pieces of Eight",
+    "name": "Any superior unique",
     "drops_required": [
-      "points"
+      "Imbued heart", "Eternal gem", "Mist battlestaff", "Dust battlestaff"
     ],
-    "drops_needed": 5000,
-    "points_based": true
+    "drops_needed": 1
   },
   {
     "name": "All GOTR Dyes",
@@ -960,19 +959,9 @@
     "drops_needed": 1
   },
   {
-    "name": "Chugging Barrel",
-    "drops_required": [
-      "Mox resin",
-      "Aga resin", 
-      "Lye resin"
-    ],
-    "drops_needed": 1,
-    "points_based": true,
-    "resin_points": {
-      "Mox resin": 17250,
-      "Aga resin": 14000,
-      "Lye resin": 18600
-    }
+    "name": "10x fletching minigame unique",
+    "drops_required": ["Fletching unique"],
+    "drops_needed": 10
   },
   {
     "name": "Any Chaos Elder Robe Piece",
