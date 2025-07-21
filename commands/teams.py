@@ -9,6 +9,7 @@ from utils.access import has_bot_access, bot_access_check, admin_access_check
 from typing import List, Dict, Any, Tuple
 from datetime import datetime, timedelta
 import asyncio
+from config import ADMIN_ROLE
 
 logger = logging.getLogger(__name__)
 
@@ -339,7 +340,7 @@ def setup_teams_command(bot: Bot):
         description="Generate balanced teams from members with the event role using Wise Old Man stats",
         guild=discord.Object(id=721816434790891643)  # Replace with your guild ID
     )
-    @app_commands.check(admin_access_check)
+    @app_commands.checks.has_role(ADMIN_ROLE)
     async def generate_teams(interaction: Interaction):
         await interaction.response.defer()
         
