@@ -139,7 +139,13 @@ def mark_tile_submission(team: str, tile_index: int, user_id: int, drop: str, qu
     try:
         conn = get_db_conn()
         cursor = conn.cursor()
-        
+        # Validate tile_index
+        cursor.execute('SELECT COUNT(*) FROM bingo_tiles')
+        num_tiles = cursor.fetchone()[0]
+        if not (0 <= tile_index < num_tiles):
+            logger.error(f"Attempted to submit invalid tile_index: {tile_index} (valid: 0-{num_tiles-1}) for team {team}, user {user_id}, drop {drop}")
+            conn.close()
+            return False
         # Check if this is a points-based tile
         cursor.execute('SELECT drops_needed FROM bingo_tiles WHERE id = ?', (tile_index,))
         tile_row = cursor.fetchone()
@@ -182,7 +188,13 @@ def mark_points_submission(team: str, tile_index: int, user_id: int, points: int
     try:
         conn = get_db_conn()
         cursor = conn.cursor()
-        
+        # Validate tile_index
+        cursor.execute('SELECT COUNT(*) FROM bingo_tiles')
+        num_tiles = cursor.fetchone()[0]
+        if not (0 <= tile_index < num_tiles):
+            logger.error(f"Attempted to submit invalid tile_index: {tile_index} (valid: 0-{num_tiles-1}) for team {team}, user {user_id}, points {points}")
+            conn.close()
+            return False
         # Check if this is a points-based tile
         cursor.execute('SELECT drops_needed FROM bingo_tiles WHERE id = ?', (tile_index,))
         tile_row = cursor.fetchone()

@@ -39,7 +39,7 @@ class ApprovalView(View):
         logger.info(f"[APPROVAL] Loaded {len(placeholders)} placeholders. Submission tile_index={self.tile_index}")
         # Defensive check for tile index
         if not (0 <= self.tile_index < len(placeholders)):
-            logger.error(f"[APPROVAL] Invalid tile index: {self.tile_index}, placeholders length: {len(placeholders)}")
+            logger.warning(f"[APPROVAL] Invalid tile index: {self.tile_index}, placeholders length: {len(placeholders)}. Approval denied.")
             await interaction.followup.send(f"❌ Invalid tile index: {self.tile_index}. Please contact an admin.", ephemeral=True)
             return
 
@@ -102,7 +102,7 @@ class ApprovalView(View):
         logger.info(f"[APPROVAL] Loaded {len(placeholders)} placeholders. Submission tile_index={self.tile_index}")
         # Defensive check for tile index
         if not (0 <= self.tile_index < len(placeholders)):
-            logger.error(f"[APPROVAL] Invalid tile index: {self.tile_index}, placeholders length: {len(placeholders)}")
+            logger.warning(f"[APPROVAL] Invalid tile index: {self.tile_index}, placeholders length: {len(placeholders)}. Approval denied.")
             await interaction.followup.send(f"❌ Invalid tile index: {self.tile_index}. Please contact an admin.", ephemeral=True)
             return
 
