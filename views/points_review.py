@@ -9,13 +9,14 @@ import config
 logger = logging.getLogger(__name__)
 
 class PointsReviewView(View):
-    def __init__(self, tile_name: str, tile_id: int, team: str, submission_id: int, user: discord.User):
+    def __init__(self, tile_name: str, tile_id: int, team: str, submission_id: int, user: discord.User, screenshot_file = None):
         super().__init__(timeout=300)  # 5 minute timeout
         self.tile_name = tile_name
         self.tile_id = tile_id
         self.team = team
         self.submission_id = submission_id
         self.user = user
+        self.screenshot_file = screenshot_file
 
     @discord.ui.button(label="📤 Send to Review", style=discord.ButtonStyle.primary, emoji="✅")
     async def send_to_review(self, interaction: Interaction, button: Button):
@@ -61,10 +62,17 @@ class PointsReviewView(View):
             )
 
             # Send to review channel
-            await review_channel.send(
-                content=submission_content,
-                view=view
-            )
+            if self.screenshot_file:
+                await review_channel.send(
+                    content=submission_content,
+                    file=self.screenshot_file,
+                    view=view
+                )
+            else:
+                await review_channel.send(
+                    content=submission_content,
+                    view=view
+                )
 
             # Update the original message to show success
             embed = discord.Embed(

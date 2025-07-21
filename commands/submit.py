@@ -196,7 +196,7 @@ def setup_submit_command(bot: Bot):
     )
     @app_commands.autocomplete(tile=tile_autocomplete, item=item_autocomplete)
     @rate_limit(cooldown_seconds=5.0, max_requests_per_hour=50)  # Rate limit submissions
-    async def submit(interaction: Interaction, tile: str, item: str, attachment: discord.Attachment = None):
+    async def submit(interaction: Interaction, tile: str, item: str, attachment: discord.Attachment):
         start_time = time.time()
         member = interaction.user
 
@@ -204,13 +204,8 @@ def setup_submit_command(bot: Bot):
             # ✅ Defer immediately to avoid "Unknown Interaction" errors
             await interaction.response.defer(ephemeral=True)
 
-            # All submissions require a screenshot
-            if not attachment:
-                await interaction.followup.send("❌ You must upload a screenshot for all submissions.", ephemeral=True)
-                return
-
-            # Validate file size (max 25MB) if attachment is provided
-            if attachment and attachment.size > 25 * 1024 * 1024:
+            # Validate file size (max 25MB)
+            if attachment.size > 25 * 1024 * 1024:
                 await interaction.followup.send("❌ File too large. Please upload a smaller screenshot (max 25MB).", ephemeral=True)
                 return
 
@@ -353,7 +348,8 @@ def setup_submit_command(bot: Bot):
                     color=0x0099FF
                 )
                 
-                view = PointsTileButtonView(tile_name, tile_id, target_points, submission_id)
+                # Pass the screenshot file to the points button view
+                view = PointsTileButtonView(tile_name, tile_id, target_points, submission_id, file)
                 
                 await interaction.followup.send(
                     embed=embed,

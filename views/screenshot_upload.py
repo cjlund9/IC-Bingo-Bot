@@ -3,6 +3,7 @@ from discord.ui import View, Button
 from discord import Interaction
 import logging
 import asyncio
+import sqlite3
 from views.approval import ApprovalView
 import config
 

@@ -23,7 +23,7 @@ class PointsSubmissionModal(Modal, title="Submit Points"):
         style=discord.TextStyle.paragraph
     )
 
-    def __init__(self, tile_name: str, tile_index: int, team: str, target_points: int, interaction: Interaction, submission_id: int = None):
+    def __init__(self, tile_name: str, tile_index: int, team: str, target_points: int, interaction: Interaction, submission_id: int = None, screenshot_file = None):
         super().__init__()
         self.tile_name = tile_name
         self.tile_index = tile_index
@@ -31,6 +31,7 @@ class PointsSubmissionModal(Modal, title="Submit Points"):
         self.target_points = target_points
         self.interaction = interaction
         self.submission_id = submission_id
+        self.screenshot_file = screenshot_file
         
         # Update the title to be more specific
         self.title = f"Submit Points for {tile_name}"
@@ -97,7 +98,7 @@ class PointsSubmissionModal(Modal, title="Submit Points"):
                 
                 # Create a view to send to review channel
                 from views.points_review import PointsReviewView
-                view = PointsReviewView(self.tile_name, self.tile_index, self.team, self.submission_id, self.interaction.user)
+                view = PointsReviewView(self.tile_name, self.tile_index, self.team, self.submission_id, self.interaction.user, self.screenshot_file)
                 
                 await interaction.response.send_message(
                     embed=embed,
@@ -176,13 +177,14 @@ class ResinSubmissionModal(Modal, title="Submit Resin Points"):
         style=discord.TextStyle.paragraph
     )
 
-    def __init__(self, tile_name: str, tile_index: int, team: str, interaction: Interaction, submission_id: int = None):
+    def __init__(self, tile_name: str, tile_index: int, team: str, interaction: Interaction, submission_id: int = None, screenshot_file = None):
         super().__init__()
         self.tile_name = tile_name
         self.tile_index = tile_index
         self.team = team
         self.interaction = interaction
         self.submission_id = submission_id
+        self.screenshot_file = screenshot_file
         
         # Update the title
         self.title = f"Submit Resin for {tile_name}"
@@ -271,7 +273,7 @@ class ResinSubmissionModal(Modal, title="Submit Resin Points"):
                 
                 # Create a view to send to review channel
                 from views.points_review import PointsReviewView
-                view = PointsReviewView(self.tile_name, self.tile_index, self.team, self.submission_id, self.interaction.user)
+                view = PointsReviewView(self.tile_name, self.tile_index, self.team, self.submission_id, self.interaction.user, self.screenshot_file)
                 
                 await interaction.response.send_message(
                     embed=embed,
