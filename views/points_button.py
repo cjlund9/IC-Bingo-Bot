@@ -22,10 +22,10 @@ class PointsTileButtonView(View):
             
             if self.tile_name == "Chugging Barrel":
                 # Use resin modal for Chugging Barrel
-                modal = ResinSubmissionModal(self.tile_name, self.tile_index, team)
+                modal = ResinSubmissionModal(self.tile_name, self.tile_index, team, interaction)
             else:
                 # Use regular points modal for other points-based tiles
-                modal = PointsSubmissionModal(self.tile_name, self.tile_index, team, self.target_points)
+                modal = PointsSubmissionModal(self.tile_name, self.tile_index, team, self.target_points, interaction)
             
             await interaction.response.send_modal(modal)
             

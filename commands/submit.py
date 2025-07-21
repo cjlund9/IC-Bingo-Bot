@@ -192,11 +192,11 @@ def setup_submit_command(bot: Bot):
     @app_commands.describe(
         tile="Select the tile you completed",
         item="Which item did you get?",
-        attachment="Upload screenshot"
+        attachment="Upload screenshot (optional for points submissions)"
     )
     @app_commands.autocomplete(tile=tile_autocomplete, item=item_autocomplete)
     @rate_limit(cooldown_seconds=5.0, max_requests_per_hour=50)  # Rate limit submissions
-    async def submit(interaction: Interaction, tile: str, item: str, attachment: discord.Attachment):
+    async def submit(interaction: Interaction, tile: str, item: str, attachment: discord.Attachment = None):
         start_time = time.time()
         member = interaction.user
 
@@ -204,12 +204,17 @@ def setup_submit_command(bot: Bot):
             # ✅ Defer immediately to avoid "Unknown Interaction" errors
             await interaction.response.defer(ephemeral=True)
 
-            if not attachment:
-                await interaction.followup.send("❌ You must upload a screenshot.", ephemeral=True)
+            # For points modal flow, attachment is handled later
+            if item == "points_modal":
+                # No attachment needed at this stage - it will be handled in the modal
+                pass
+            # For all other submissions, attachment is required
+            elif not attachment:
+                await interaction.followup.send("❌ You must upload a screenshot for regular submissions.", ephemeral=True)
                 return
 
-            # Validate file size (max 25MB)
-            if attachment.size > 25 * 1024 * 1024:
+            # Validate file size (max 25MB) if attachment is provided
+            if attachment and attachment.size > 25 * 1024 * 1024:
                 await interaction.followup.send("❌ File too large. Please upload a smaller screenshot (max 25MB).", ephemeral=True)
                 return
 
@@ -247,7 +252,7 @@ def setup_submit_command(bot: Bot):
                 
                 embed = discord.Embed(
                     title="📝 Points Input Required",
-                    description=f"**Tile:** {tile_name}\n**Target:** {target_points:,} points\n\nPlease click the button below to enter your points in a form.",
+                    description=f"**Tile:** {tile_name}\n**Target:** {target_points:,} points\n\nPlease click the button below to enter your points in a form. You'll be able to upload a screenshot after entering your points.",
                     color=0x0099FF
                 )
                 
