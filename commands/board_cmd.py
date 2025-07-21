@@ -26,6 +26,9 @@ def setup_board_command(bot: Bot):
     @app_commands.describe(team="Team to display board for (optional, leadership/event coordinator only)")
     @rate_limit(cooldown_seconds=10.0, max_requests_per_hour=30)  # Rate limit board updates
     async def board_cmd(interaction: Interaction, team: str = None):
+        if interaction.user.id != ALLOWED_USER_ID:
+            await interaction.response.send_message("❌ Only the event host can use this command right now.", ephemeral=True)
+            return
         start_time = time.time()
         
         # Check if board is released
