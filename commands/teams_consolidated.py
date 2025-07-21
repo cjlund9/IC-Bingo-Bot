@@ -77,11 +77,11 @@ class TeamBalancer:
                 balance_scores['ehb_diff'] <= 300 and 
                 balance_scores['ehp_diff'] <= 300)
     
-    def generate_balanced_teams(self) -> Tuple[List[Dict], List[Dict]]:
+    async def generate_balanced_teams(self) -> Tuple[List[Dict], List[Dict]]:
         """Generate balanced teams using priority-based balancing"""
         # Fetch stats for all players
         for player in self.players:
-            stats = self.fetch_player_stats(player['rsn'])
+            stats = await self.fetch_player_stats(player['rsn'])
             player.update(stats)
         
         # Sort players by overall strength (EHB + EHP + Slayer)
@@ -290,7 +290,7 @@ async def teams_generate(interaction: Interaction):
         
         # Use the team balancer
         balancer = TeamBalancer(player_stats)
-        team1, team2 = balancer.generate_balanced_teams()
+        team1, team2 = await balancer.generate_balanced_teams()
         
         # Calculate team statistics
         team1_stats = balancer.calculate_team_stats(team1)
@@ -413,7 +413,7 @@ async def teams_post(interaction: Interaction, channel: discord.TextChannel = No
         
         # Use the team balancer
         balancer = TeamBalancer(player_stats)
-        team1, team2 = balancer.generate_balanced_teams()
+        team1, team2 = await balancer.generate_balanced_teams()
         
         # Calculate team statistics
         team1_stats = balancer.calculate_team_stats(team1)
