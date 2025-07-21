@@ -110,7 +110,7 @@ class TeamBalancer:
             stats = await self.fetch_player_stats(player['rsn'])
             player.update(stats)
             # Add a 5-second delay between requests
-            await asyncio.sleep(5)
+            await asyncio.sleep(10)
         
         # Sort players by total score for initial distribution
         sorted_players = sorted(self.players, key=lambda x: x['total_score'], reverse=True)

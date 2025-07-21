@@ -80,7 +80,7 @@ class TeamBalancer:
         for player in self.players:
             stats = await self.fetch_player_stats(player['rsn'])
             player.update(stats)
-            await asyncio.sleep(5)
+            await asyncio.sleep(10)
         
         # Sort players by overall strength (EHB + EHP + Slayer)
         sorted_players = sorted(self.players, 
