@@ -28,6 +28,17 @@ class ApprovalView(View):
 
         await interaction.response.defer(ephemeral=True)
 
+        from config import load_placeholders
+        placeholders = load_placeholders()
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"[APPROVAL] Loaded {len(placeholders)} placeholders. Submission tile_index={self.tile_index}")
+        # Defensive check for tile index
+        if not (0 <= self.tile_index < len(placeholders)):
+            logger.error(f"[APPROVAL] Invalid tile index: {self.tile_index}, placeholders length: {len(placeholders)}")
+            await interaction.followup.send(f"❌ Invalid tile index: {self.tile_index}. Please contact an admin.", ephemeral=True)
+            return
+
         # Use the new approval system
         from storage import approve_submission
         if self.submission_id:
@@ -40,12 +51,30 @@ class ApprovalView(View):
         if success:
             from config import load_placeholders
             placeholders = load_placeholders()
+            # Defensive check for tile index
+            if not (0 <= self.tile_index < len(placeholders)):
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Invalid tile index: {self.tile_index}, placeholders length: {len(placeholders)}")
+                await interaction.followup.send(f"❌ Invalid tile index: {self.tile_index}. Please contact an admin.", ephemeral=True)
+                return
             from board import generate_board_image
             generate_board_image(placeholders, None, team=self.team)
             await update_board_message(interaction.guild, interaction.guild.me, team=self.team)
 
         from config import load_placeholders
         placeholders = load_placeholders()
+        # Defensive check for tile index
+        if not (0 <= self.tile_index < len(placeholders)):
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Invalid tile index: {self.tile_index}, placeholders length: {len(placeholders)}")
+            await interaction.message.edit(
+                content=f"❌ Invalid tile index: {self.tile_index}. Please contact an admin.",
+                view=None
+            )
+            await interaction.followup.send(f"❌ Invalid tile index: {self.tile_index}. Please contact an admin.", ephemeral=True)
+            return
         tile_name = placeholders[self.tile_index]["name"]
 
         await interaction.message.edit(
@@ -64,6 +93,51 @@ class ApprovalView(View):
 
         from config import load_placeholders
         placeholders = load_placeholders()
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"[APPROVAL] Loaded {len(placeholders)} placeholders. Submission tile_index={self.tile_index}")
+        # Defensive check for tile index
+        if not (0 <= self.tile_index < len(placeholders)):
+            logger.error(f"[APPROVAL] Invalid tile index: {self.tile_index}, placeholders length: {len(placeholders)}")
+            await interaction.followup.send(f"❌ Invalid tile index: {self.tile_index}. Please contact an admin.", ephemeral=True)
+            return
+
+        # Use the new approval system
+        from storage import approve_submission
+        if self.submission_id:
+            success = approve_submission(self.submission_id, interaction.user.id)
+        else:
+            # Fallback to old system if no submission_id
+            from storage import mark_tile_submission
+            success = mark_tile_submission(self.team, self.tile_index, self.submitter.id, self.drop, quantity=1)
+        
+        if success:
+            from config import load_placeholders
+            placeholders = load_placeholders()
+            # Defensive check for tile index
+            if not (0 <= self.tile_index < len(placeholders)):
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Invalid tile index: {self.tile_index}, placeholders length: {len(placeholders)}")
+                await interaction.followup.send(f"❌ Invalid tile index: {self.tile_index}. Please contact an admin.", ephemeral=True)
+                return
+            from board import generate_board_image
+            generate_board_image(placeholders, None, team=self.team)
+            await update_board_message(interaction.guild, interaction.guild.me, team=self.team)
+
+        from config import load_placeholders
+        placeholders = load_placeholders()
+        # Defensive check for tile index
+        if not (0 <= self.tile_index < len(placeholders)):
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Invalid tile index: {self.tile_index}, placeholders length: {len(placeholders)}")
+            await interaction.message.edit(
+                content=f"❌ Invalid tile index: {self.tile_index}. Please contact an admin.",
+                view=None
+            )
+            await interaction.followup.send(f"❌ Invalid tile index: {self.tile_index}. Please contact an admin.", ephemeral=True)
+            return
         tile_name = placeholders[self.tile_index]["name"]
 
         await interaction.message.edit(
