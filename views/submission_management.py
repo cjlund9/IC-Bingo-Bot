@@ -34,6 +34,8 @@ class SubmissionManagementView(View):
         await interaction.response.defer(ephemeral=True)
 
         try:
+            # Debug log for tile index
+            logger.info(f"[DEBUG] Submitting: team={self.team}, tile_index={self.tile_index}")
             # Mark the submission
             success = mark_tile_submission(self.team, self.tile_index + 1, interaction.user.id, self.drop, quantity=1)
             
