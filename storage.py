@@ -52,13 +52,13 @@ def get_tile_progress(team: str, tile_index: int) -> Dict[str, Any]:
         cursor.execute('''
             SELECT t.name, t.drops_needed, p.completed_count, p.total_required 
             FROM bingo_tiles t 
-            LEFT JOIN bingo_team_progress p ON t.id = p.tile_id AND p.team = ?
+            LEFT JOIN bingo_team_progress p ON t.id = p.tile_id AND p.team_name = ?
             WHERE t.id = ?
         ''', (team, tile_index))
         tile_row = cursor.fetchone()
         
         # Get submissions
-        cursor.execute('''SELECT user_id, drop_name, quantity FROM bingo_submissions WHERE team = ? AND tile_id = ?''', (team, tile_index))
+        cursor.execute('''SELECT user_id, drop_name, quantity FROM bingo_submissions WHERE team_name = ? AND tile_id = ?''', (team, tile_index))
         submissions = cursor.fetchall()
         
         conn.close()
@@ -148,10 +148,10 @@ def mark_tile_submission(team: str, tile_index: int, user_id: int, drop: str, qu
             return False
             
         # Insert submission
-        cursor.execute('''INSERT INTO bingo_submissions (team, tile_id, user_id, drop_name, quantity) VALUES (?, ?, ?, ?, ?)''', (team, tile_index, user_id, drop, quantity))
+        cursor.execute('''INSERT INTO bingo_submissions (team_name, tile_id, user_id, drop_name, quantity) VALUES (?, ?, ?, ?, ?)''', (team, tile_index, user_id, drop, quantity))
         
         # Update team progress
-        cursor.execute('''SELECT completed_count, total_required FROM bingo_team_progress WHERE team = ? AND tile_id = ?''', (team, tile_index))
+        cursor.execute('''SELECT completed_count, total_required FROM bingo_team_progress WHERE team_name = ? AND tile_id = ?''', (team, tile_index))
         progress_row = cursor.fetchone()
         
         if progress_row:
@@ -164,11 +164,11 @@ def mark_tile_submission(team: str, tile_index: int, user_id: int, drop: str, qu
             else:
                 new_count = current_count + quantity
                 
-            cursor.execute('''UPDATE bingo_team_progress SET completed_count = ? WHERE team = ? AND tile_id = ?''', (new_count, team, tile_index))
+            cursor.execute('''UPDATE bingo_team_progress SET completed_count = ? WHERE team_name = ? AND tile_id = ?''', (new_count, team, tile_index))
         else:
             # Get total_required from tiles
             total_required = tile_row[0]
-            cursor.execute('''INSERT INTO bingo_team_progress (team, tile_id, completed_count, total_required) VALUES (?, ?, ?, ?)''', (team, tile_index, quantity, total_required))
+            cursor.execute('''INSERT INTO bingo_team_progress (team_name, tile_id, completed_count, total_required) VALUES (?, ?, ?, ?)''', (team, tile_index, quantity, total_required))
             
         conn.commit()
         conn.close()
@@ -191,21 +191,21 @@ def mark_points_submission(team: str, tile_index: int, user_id: int, points: int
             return False
             
         # Insert submission with "points" as the drop name
-        cursor.execute('''INSERT INTO bingo_submissions (team, tile_id, user_id, drop_name, quantity) VALUES (?, ?, ?, ?, ?)''', (team, tile_index, user_id, "points", points))
+        cursor.execute('''INSERT INTO bingo_submissions (team_name, tile_id, user_id, drop_name, quantity) VALUES (?, ?, ?, ?, ?)''', (team, tile_index, user_id, "points", points))
         
         # Update team progress
-        cursor.execute('''SELECT completed_count, total_required FROM bingo_team_progress WHERE team = ? AND tile_id = ?''', (team, tile_index))
+        cursor.execute('''SELECT completed_count, total_required FROM bingo_team_progress WHERE team_name = ? AND tile_id = ?''', (team, tile_index))
         progress_row = cursor.fetchone()
         
         if progress_row:
             current_count = progress_row[0]
             total_required = progress_row[1]
             new_count = current_count + points
-            cursor.execute('''UPDATE bingo_team_progress SET completed_count = ? WHERE team = ? AND tile_id = ?''', (new_count, team, tile_index))
+            cursor.execute('''UPDATE bingo_team_progress SET completed_count = ? WHERE team_name = ? AND tile_id = ?''', (new_count, team, tile_index))
         else:
             # Get total_required from tiles
             total_required = tile_row[0]
-            cursor.execute('''INSERT INTO bingo_team_progress (team, tile_id, completed_count, total_required) VALUES (?, ?, ?, ?)''', (team, tile_index, points, total_required))
+            cursor.execute('''INSERT INTO bingo_team_progress (team_name, tile_id, completed_count, total_required) VALUES (?, ?, ?, ?)''', (team, tile_index, points, total_required))
             
         conn.commit()
         conn.close()
@@ -220,7 +220,7 @@ def remove_tile_submission(team: str, tile_index: int, submission_index: int) ->
         conn = get_db_conn()
         cursor = conn.cursor()
         # Get the submission id
-        cursor.execute('''SELECT id FROM bingo_submissions WHERE team = ? AND tile_id = ? ORDER BY id LIMIT 1 OFFSET ?''', (team, tile_index, submission_index))
+        cursor.execute('''SELECT id FROM bingo_submissions WHERE team_name = ? AND tile_id = ? ORDER BY id LIMIT 1 OFFSET ?''', (team, tile_index, submission_index))
         row = cursor.fetchone()
         if not row:
             conn.close()
