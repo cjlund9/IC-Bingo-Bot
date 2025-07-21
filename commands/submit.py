@@ -192,7 +192,7 @@ def setup_submit_command(bot: Bot):
     @app_commands.describe(
         tile="Select the tile you completed",
         item="Which item did you get?",
-        attachment="Upload screenshot (optional for points submissions)"
+        attachment="Upload screenshot"
     )
     @app_commands.autocomplete(tile=tile_autocomplete, item=item_autocomplete)
     @rate_limit(cooldown_seconds=5.0, max_requests_per_hour=50)  # Rate limit submissions
@@ -204,13 +204,9 @@ def setup_submit_command(bot: Bot):
             # ✅ Defer immediately to avoid "Unknown Interaction" errors
             await interaction.response.defer(ephemeral=True)
 
-            # For points modal flow, attachment is handled later
-            if item == "points_modal":
-                # No attachment needed at this stage - it will be handled in the modal
-                pass
-            # For all other submissions, attachment is required
-            elif not attachment:
-                await interaction.followup.send("❌ You must upload a screenshot for regular submissions.", ephemeral=True)
+            # All submissions require a screenshot
+            if not attachment:
+                await interaction.followup.send("❌ You must upload a screenshot for all submissions.", ephemeral=True)
                 return
 
             # Validate file size (max 25MB) if attachment is provided
@@ -238,32 +234,29 @@ def setup_submit_command(bot: Bot):
 
             team = get_user_team(member)
 
-            # Check if user selected the points modal option
-            if item == "points_modal":
-                # Show the points input button view
-                from views.points_button import PointsTileButtonView
-                
-                # Get the target points for this tile
-                conn = sqlite3.connect('leaderboard.db')
-                cursor = conn.cursor()
-                cursor.execute('SELECT drops_needed FROM bingo_tiles WHERE tile_index = ?', (tile_index,))
-                target_points = cursor.fetchone()[0]
-                conn.close()
-                
-                embed = discord.Embed(
-                    title="📝 Points Input Required",
-                    description=f"**Tile:** {tile_name}\n**Target:** {target_points:,} points\n\nPlease click the button below to enter your points in a form. You'll be able to upload a screenshot after entering your points.",
-                    color=0x0099FF
-                )
-                
-                view = PointsTileButtonView(tile_name, tile_index, target_points)
-                
-                await interaction.followup.send(
-                    embed=embed,
-                    view=view,
-                    ephemeral=True
-                )
-                return
+            # Check if this is a points-based tile that needs points input
+            is_points_tile = False
+            target_points = 0
+            
+            # Check if the tile is points-based
+            conn = sqlite3.connect('leaderboard.db')
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT bt.drops_needed, btd.drop_name 
+                FROM bingo_tiles bt 
+                LEFT JOIN bingo_tile_drops btd ON bt.id = btd.tile_id 
+                WHERE bt.tile_index = ?
+            ''', (tile_index,))
+            
+            rows = cursor.fetchall()
+            conn.close()
+            
+            drops_needed = rows[0][0] if rows else 1
+            drops = [row[1] for row in rows if row[1] is not None]
+            
+            if "points" in drops and drops_needed > 1:
+                is_points_tile = True
+                target_points = drops_needed
 
             # Check if this is a points-based submission
             is_points_submission = False
@@ -330,8 +323,11 @@ def setup_submit_command(bot: Bot):
             conn = sqlite3.connect('leaderboard.db')
             cursor = conn.cursor()
             
-            # Insert the submission
-            if is_points_submission:
+            # For points-based tiles, create a placeholder submission that will be updated by the modal
+            if is_points_tile:
+                drop_name = "points_placeholder"
+                quantity = 0  # Will be updated by modal
+            elif is_points_submission:
                 drop_name = "points" if tile_name != "Chugging Barrel" else item
                 quantity = points_value
             else:
@@ -347,7 +343,26 @@ def setup_submit_command(bot: Bot):
             conn.commit()
             conn.close()
 
-            view = ApprovalView(member, tile_id, team, drop=item, submission_id=submission_id)
+            # For points-based tiles, show points input modal after submission
+            if is_points_tile:
+                from views.points_button import PointsTileButtonView
+                
+                embed = discord.Embed(
+                    title="📝 Points Input Required",
+                    description=f"**Tile:** {tile_name}\n**Target:** {target_points:,} points\n\nYour submission has been created. Please click the button below to enter your points.",
+                    color=0x0099FF
+                )
+                
+                view = PointsTileButtonView(tile_name, tile_id, target_points, submission_id)
+                
+                await interaction.followup.send(
+                    embed=embed,
+                    view=view,
+                    ephemeral=True
+                )
+                return
+            else:
+                view = ApprovalView(member, tile_id, team, drop=item, submission_id=submission_id)
 
             # Create submission message
             if is_points_submission:

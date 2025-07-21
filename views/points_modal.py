@@ -23,13 +23,14 @@ class PointsSubmissionModal(Modal, title="Submit Points"):
         style=discord.TextStyle.paragraph
     )
 
-    def __init__(self, tile_name: str, tile_index: int, team: str, target_points: int, interaction: Interaction):
+    def __init__(self, tile_name: str, tile_index: int, team: str, target_points: int, interaction: Interaction, submission_id: int = None):
         super().__init__()
         self.tile_name = tile_name
         self.tile_index = tile_index
         self.team = team
         self.target_points = target_points
         self.interaction = interaction
+        self.submission_id = submission_id
         
         # Update the title to be more specific
         self.title = f"Submit Points for {tile_name}"
@@ -65,38 +66,77 @@ class PointsSubmissionModal(Modal, title="Submit Points"):
             self.points_value = points_value
             self.notes_value = self.notes.value.strip() if self.notes.value else ""
             
-            # Send confirmation and request screenshot
-            embed = discord.Embed(
-                title="📸 Screenshot Required",
-                description=f"**Tile:** {self.tile_name}\n**Points:** {points_value:,}\n**Target:** {self.target_points:,}",
-                color=0x0099FF
-            )
-            
-            if self.notes_value:
-                embed.add_field(name="Notes", value=self.notes_value, inline=False)
-            
-            embed.add_field(
-                name="Next Step", 
-                value="Please upload a screenshot to complete your submission.", 
-                inline=False
-            )
-            
-            # Create a view with a button to handle the screenshot upload
-            from views.screenshot_upload import ScreenshotUploadView
-            view = ScreenshotUploadView(
-                self.tile_name, 
-                self.tile_index, 
-                self.team, 
-                points_value, 
-                self.notes_value,
-                self.interaction.user
-            )
-            
-            await interaction.response.send_message(
-                embed=embed,
-                view=view,
-                ephemeral=True
-            )
+            # Update the existing submission with the points value
+            if self.submission_id:
+                import sqlite3
+                conn = sqlite3.connect('leaderboard.db')
+                cursor = conn.cursor()
+                cursor.execute('''
+                    UPDATE bingo_submissions 
+                    SET drop_name = 'points', quantity = ?, status = 'pending'
+                    WHERE id = ?
+                ''', (points_value, self.submission_id))
+                conn.commit()
+                conn.close()
+                
+                # Send confirmation
+                embed = discord.Embed(
+                    title="✅ Points Updated",
+                    description=f"**Tile:** {self.tile_name}\n**Points:** {points_value:,}\n**Target:** {self.target_points:,}",
+                    color=0x00FF00
+                )
+                
+                if self.notes_value:
+                    embed.add_field(name="Notes", value=self.notes_value, inline=False)
+                
+                embed.add_field(
+                    name="Next Step", 
+                    value="Click the button below to send your submission for review.", 
+                    inline=False
+                )
+                
+                # Create a view to send to review channel
+                from views.points_review import PointsReviewView
+                view = PointsReviewView(self.tile_name, self.tile_index, self.team, self.submission_id, self.interaction.user)
+                
+                await interaction.response.send_message(
+                    embed=embed,
+                    view=view,
+                    ephemeral=True
+                )
+            else:
+                # Fallback to old screenshot upload flow
+                embed = discord.Embed(
+                    title="📸 Screenshot Required",
+                    description=f"**Tile:** {self.tile_name}\n**Points:** {points_value:,}\n**Target:** {self.target_points:,}",
+                    color=0x0099FF
+                )
+                
+                if self.notes_value:
+                    embed.add_field(name="Notes", value=self.notes_value, inline=False)
+                
+                embed.add_field(
+                    name="Next Step", 
+                    value="Please upload a screenshot to complete your submission.", 
+                    inline=False
+                )
+                
+                # Create a view with a button to handle the screenshot upload
+                from views.screenshot_upload import ScreenshotUploadView
+                view = ScreenshotUploadView(
+                    self.tile_name, 
+                    self.tile_index, 
+                    self.team, 
+                    points_value, 
+                    self.notes_value,
+                    self.interaction.user
+                )
+                
+                await interaction.response.send_message(
+                    embed=embed,
+                    view=view,
+                    ephemeral=True
+                )
             
         except ValueError:
             await interaction.response.send_message(
@@ -136,12 +176,13 @@ class ResinSubmissionModal(Modal, title="Submit Resin Points"):
         style=discord.TextStyle.paragraph
     )
 
-    def __init__(self, tile_name: str, tile_index: int, team: str, interaction: Interaction):
+    def __init__(self, tile_name: str, tile_index: int, team: str, interaction: Interaction, submission_id: int = None):
         super().__init__()
         self.tile_name = tile_name
         self.tile_index = tile_index
         self.team = team
         self.interaction = interaction
+        self.submission_id = submission_id
         
         # Update the title
         self.title = f"Submit Resin for {tile_name}"
@@ -199,38 +240,77 @@ class ResinSubmissionModal(Modal, title="Submit Resin Points"):
             self.total_points = total_points
             self.notes_value = self.notes.value.strip() if self.notes.value else ""
             
-            # Send confirmation and request screenshot
-            embed = discord.Embed(
-                title="📸 Screenshot Required",
-                description=f"**Tile:** {self.tile_name}\n**Resin:** {self.resin_type_value}\n**Quantity:** {quantity_value:,}\n**Total Points:** {total_points:,}",
-                color=0x0099FF
-            )
-            
-            if self.notes_value:
-                embed.add_field(name="Notes", value=self.notes_value, inline=False)
-            
-            embed.add_field(
-                name="Next Step", 
-                value="Please upload a screenshot to complete your submission.", 
-                inline=False
-            )
-            
-            # Create a view with a button to handle the screenshot upload
-            from views.screenshot_upload import ScreenshotUploadView
-            view = ScreenshotUploadView(
-                self.tile_name, 
-                self.tile_index, 
-                self.team, 
-                total_points, 
-                f"{self.notes_value}\nResin: {self.resin_type_value} (x{quantity_value:,})",
-                self.interaction.user
-            )
-            
-            await interaction.response.send_message(
-                embed=embed,
-                view=view,
-                ephemeral=True
-            )
+            # Update the existing submission with the resin value
+            if self.submission_id:
+                import sqlite3
+                conn = sqlite3.connect('leaderboard.db')
+                cursor = conn.cursor()
+                cursor.execute('''
+                    UPDATE bingo_submissions 
+                    SET drop_name = ?, quantity = ?, status = 'pending'
+                    WHERE id = ?
+                ''', (self.resin_type_value, quantity_value, self.submission_id))
+                conn.commit()
+                conn.close()
+                
+                # Send confirmation
+                embed = discord.Embed(
+                    title="✅ Resin Updated",
+                    description=f"**Tile:** {self.tile_name}\n**Resin:** {self.resin_type_value}\n**Quantity:** {quantity_value:,}\n**Total Points:** {total_points:,}",
+                    color=0x00FF00
+                )
+                
+                if self.notes_value:
+                    embed.add_field(name="Notes", value=self.notes_value, inline=False)
+                
+                embed.add_field(
+                    name="Next Step", 
+                    value="Click the button below to send your submission for review.", 
+                    inline=False
+                )
+                
+                # Create a view to send to review channel
+                from views.points_review import PointsReviewView
+                view = PointsReviewView(self.tile_name, self.tile_index, self.team, self.submission_id, self.interaction.user)
+                
+                await interaction.response.send_message(
+                    embed=embed,
+                    view=view,
+                    ephemeral=True
+                )
+            else:
+                # Fallback to old screenshot upload flow
+                embed = discord.Embed(
+                    title="📸 Screenshot Required",
+                    description=f"**Tile:** {self.tile_name}\n**Resin:** {self.resin_type_value}\n**Quantity:** {quantity_value:,}\n**Total Points:** {total_points:,}",
+                    color=0x0099FF
+                )
+                
+                if self.notes_value:
+                    embed.add_field(name="Notes", value=self.notes_value, inline=False)
+                
+                embed.add_field(
+                    name="Next Step", 
+                    value="Please upload a screenshot to complete your submission.", 
+                    inline=False
+                )
+                
+                # Create a view with a button to handle the screenshot upload
+                from views.screenshot_upload import ScreenshotUploadView
+                view = ScreenshotUploadView(
+                    self.tile_name, 
+                    self.tile_index, 
+                    self.team, 
+                    total_points, 
+                    f"{self.notes_value}\nResin: {self.resin_type_value} (x{quantity_value:,})",
+                    self.interaction.user
+                )
+                
+                await interaction.response.send_message(
+                    embed=embed,
+                    view=view,
+                    ephemeral=True
+                )
             
         except ValueError:
             await interaction.response.send_message(
