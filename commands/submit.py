@@ -19,6 +19,9 @@ logger = logging.getLogger(__name__)
 # Autocomplete for tile selection
 async def tile_autocomplete(interaction: Interaction, current: str):
     try:
+        # Add a small delay to prevent rapid successive calls
+        await asyncio.sleep(0.1)
+        
         conn = sqlite3.connect('leaderboard.db')
         cursor = conn.cursor()
         
@@ -57,14 +60,17 @@ async def tile_autocomplete(interaction: Interaction, current: str):
 
 # Autocomplete for drop item based on selected tile
 async def item_autocomplete(interaction: Interaction, current: str):
-    tile_value = None
-    if interaction.data and "options" in interaction.data:
-        for option in interaction.data["options"]:
-            if option["name"] == "tile":
-                tile_value = option.get("value")
-                break
-
     try:
+        # Add a small delay to prevent rapid successive calls
+        await asyncio.sleep(0.1)
+        
+        tile_value = None
+        if interaction.data and "options" in interaction.data:
+            for option in interaction.data["options"]:
+                if option["name"] == "tile":
+                    tile_value = option.get("value")
+                    break
+
         if not tile_value or tile_value == "invalid":
             return [app_commands.Choice(name="⚠️ Select a tile first", value="invalid")]
         
