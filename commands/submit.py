@@ -292,8 +292,14 @@ def setup_submit_command(bot: Bot):
             ''', (team, tile_id, member.id, drop_name, quantity))
             submission_id = cursor.lastrowid
             conn.commit()
+            # Fetch the correct tile_index for the given tile_id
+            cursor.execute('SELECT tile_index FROM bingo_tiles WHERE id = ?', (tile_id,))
+            tile_index_row = cursor.fetchone()
             conn.close()
-
+            if not tile_index_row:
+                await interaction.followup.send("❌ Internal error: tile index not found.", ephemeral=True)
+                return
+            tile_index = tile_index_row[0]
             review_channel = discord.utils.get(interaction.guild.text_channels, name=config.REVIEW_CHANNEL_NAME)
             if not review_channel:
                 await interaction.followup.send(
@@ -310,7 +316,7 @@ def setup_submit_command(bot: Bot):
                 return
 
             from views.approval import ApprovalView
-            view = ApprovalView(member, tile_id, team, drop=drop_name if not is_points_tile else f"{points_value:,} points", submission_id=submission_id)
+            view = ApprovalView(member, tile_index, team, drop=drop_name if not is_points_tile else f"{points_value:,} points", submission_id=submission_id)
 
             # Create submission message
             if is_points_tile:

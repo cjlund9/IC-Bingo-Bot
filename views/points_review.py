@@ -56,7 +56,18 @@ class PointsReviewView(View):
                 return
 
             # Create the approval view
-            view = ApprovalView(self.user, self.tile_id, self.team, drop=f"{quantity:,} points", submission_id=self.submission_id)
+            # Fetch the correct tile_index for the given tile_id
+            import sqlite3
+            conn = sqlite3.connect('leaderboard.db')
+            cursor = conn.cursor()
+            cursor.execute('SELECT tile_index FROM bingo_tiles WHERE id = ?', (self.tile_id,))
+            tile_index_row = cursor.fetchone()
+            conn.close()
+            if not tile_index_row:
+                await interaction.response.send_message("❌ Internal error: tile index not found.", ephemeral=True)
+                return
+            tile_index = tile_index_row[0]
+            view = ApprovalView(self.user, tile_index, self.team, drop=f"{quantity:,} points", submission_id=self.submission_id)
 
             # Create submission message
             submission_content = (
