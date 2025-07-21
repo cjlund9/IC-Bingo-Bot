@@ -37,10 +37,19 @@ def rate_limit(cooldown_seconds: float = 3.0, max_requests_per_hour: int = 100):
             last_used = command_cooldowns[command_name][user_id]
             if current_time - last_used < cooldown_seconds:
                 remaining = cooldown_seconds - (current_time - last_used)
-                await interaction.response.send_message(
-                    f"⏰ Please wait {remaining:.1f} seconds before using this command again.",
-                    ephemeral=True
-                )
+                try:
+                    await interaction.response.send_message(
+                        f"⏰ Please wait {remaining:.1f} seconds before using this command again.",
+                        ephemeral=True
+                    )
+                except discord.errors.HTTPException as e:
+                    if e.code == 40060:  # Interaction already acknowledged
+                        await interaction.followup.send(
+                            f"⏰ Please wait {remaining:.1f} seconds before using this command again.",
+                            ephemeral=True
+                        )
+                    else:
+                        raise
                 return
             
             # Check hourly limit
@@ -56,10 +65,19 @@ def rate_limit(cooldown_seconds: float = 3.0, max_requests_per_hour: int = 100):
             user_counts[user_id] = valid_timestamps
             
             if len(user_counts[user_id]) >= max_requests_per_hour:
-                await interaction.response.send_message(
-                    f"⏰ You've used this command too many times in the last hour. Please wait before trying again.",
-                    ephemeral=True
-                )
+                try:
+                    await interaction.response.send_message(
+                        f"⏰ You've used this command too many times in the last hour. Please wait before trying again.",
+                        ephemeral=True
+                    )
+                except discord.errors.HTTPException as e:
+                    if e.code == 40060:  # Interaction already acknowledged
+                        await interaction.followup.send(
+                            f"⏰ You've used this command too many times in the last hour. Please wait before trying again.",
+                            ephemeral=True
+                        )
+                    else:
+                        raise
                 return
             
             # Update usage tracking
