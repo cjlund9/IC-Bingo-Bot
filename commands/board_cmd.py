@@ -14,13 +14,15 @@ from utils.access import leadership_or_event_coordinator_check
 from board import generate_board_image, OUTPUT_FILE
 from database import DatabaseManager
 
+ALLOWED_USER_ID = 169282701046710272  # Temporary: Only this user can run /board
+
 def setup_board_command(bot: Bot):
     @bot.tree.command(
         name="board",
         description="Display the current bingo board",
         guild=discord.Object(id=GUILD_ID)
     )
-    @app_commands.check(leadership_or_event_coordinator_check)
+    # @app_commands.check(leadership_or_event_coordinator_check)  # Temporarily disabled
     @app_commands.describe(team="Team to display board for (optional, leadership/event coordinator only)")
     @rate_limit(cooldown_seconds=10.0, max_requests_per_hour=30)  # Rate limit board updates
     async def board_cmd(interaction: Interaction, team: str = None):
