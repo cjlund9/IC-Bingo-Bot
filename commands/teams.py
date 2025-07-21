@@ -337,7 +337,7 @@ def setup_teams_command(bot: Bot):
     @bot.tree.command(
         name="generate_teams",
         description="Generate balanced teams from members with the event role using Wise Old Man stats",
-        guild=discord.Object(id=1344457562535497779)  # Replace with your guild ID
+        guild=discord.Object(id=721816434790891643)  # Replace with your guild ID
     )
     @app_commands.check(admin_access_check)
     async def generate_teams(interaction: Interaction):
