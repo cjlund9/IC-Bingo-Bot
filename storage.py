@@ -154,7 +154,7 @@ def mark_tile_submission(team: str, tile_index: int, user_id: int, drop: str, qu
             return False
             
         # Insert submission
-        cursor.execute('''INSERT INTO bingo_submissions (team_name, tile_id, user_id, drop_name, quantity) VALUES (?, ?, ?, ?, ?)''', (team, tile_index, user_id, drop, quantity))
+        cursor.execute('''INSERT INTO bingo_submissions (team_name, tile_id, user_id, drop_name, quantity, status) VALUES (?, ?, ?, ?, ?, ?)''', (team, tile_index, user_id, drop, quantity, 'pending'))
         
         # Update team progress
         cursor.execute('''SELECT completed_count, total_required FROM bingo_team_progress WHERE team_name = ? AND tile_id = ?''', (team, tile_index))
@@ -203,7 +203,7 @@ def mark_points_submission(team: str, tile_index: int, user_id: int, points: int
             return False
             
         # Insert submission with "points" as the drop name
-        cursor.execute('''INSERT INTO bingo_submissions (team_name, tile_id, user_id, drop_name, quantity) VALUES (?, ?, ?, ?, ?)''', (team, tile_index, user_id, "points", points))
+        cursor.execute('''INSERT INTO bingo_submissions (team_name, tile_id, user_id, drop_name, quantity, status) VALUES (?, ?, ?, ?, ?, ?)''', (team, tile_index, user_id, "points", points, 'pending'))
         
         # Update team progress
         cursor.execute('''SELECT completed_count, total_required FROM bingo_team_progress WHERE team_name = ? AND tile_id = ?''', (team, tile_index))

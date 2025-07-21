@@ -23,7 +23,7 @@ dist/
 # Logs and databases
 *.log
 *.sqlite3
-*.db
+# *.db
 database/*.db
 database/*.db.backup*
 database/*.db.local*

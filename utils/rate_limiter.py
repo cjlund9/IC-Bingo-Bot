@@ -59,6 +59,9 @@ def rate_limit(cooldown_seconds: float = 3.0, max_requests_per_hour: int = 100):
             # Clean old entries and count valid ones
             if user_id not in user_counts:
                 user_counts[user_id] = []
+            # Ensure the value is always a list (fix for possible int assignment bug)
+            if not isinstance(user_counts[user_id], list):
+                user_counts[user_id] = []
             
             # Filter out old timestamps and count remaining ones
             valid_timestamps = [ts for ts in user_counts[user_id] if ts > hour_ago]
