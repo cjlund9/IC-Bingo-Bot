@@ -31,37 +31,24 @@ def setup_board_command(bot: Bot):
             return
         start_time = time.time()
         
-        # Remove board release time check
-        # db = DatabaseManager()
-        # release_time_str = db.get_board_release_time()
-        
-        # if release_time_str:
-        #     try:
-        #         release_time = datetime.fromisoformat(release_time_str.replace('Z', '+00:00'))
-        #         if release_time.tzinfo is None:
-        #             release_time = release_time.replace(tzinfo=timezone.utc)
-                
-        #         if datetime.now(timezone.utc) < release_time:
-        #             time_until_release = release_time - datetime.now(timezone.utc)
-        #             hours = int(time_until_release.total_seconds() // 3600)
-        #             minutes = int((time_until_release.total_seconds() % 3600) // 60)
-                    
-        #             await interaction.response.send_message(
-        #                 f"⏰ **Board not yet released!**\n"
-        #                 f"The bingo board will be available in **{hours}h {minutes}m**\n"
-        #                 f"Release time: <t:{int(release_time.timestamp())}:F>",
-        #                 ephemeral=True
-        #             )
-        #             return
-        #     except Exception as e:
-        #         logger.error(f"Error parsing release time: {e}")
-        #         # If there's an error parsing the time, allow access
-        
-        team = team.lower() if team else DEFAULT_TEAM
+        # Determine the correct team (never use 'all' for a team-specific board)
+        # If no team is specified, try to infer from user roles, else use DEFAULT_TEAM
+        if team:
+            team = team.lower()
+        else:
+            # Try to infer from user roles
+            user_roles = [r.name.lower() for r in getattr(interaction.user, 'roles', [])]
+            found_team = None
+            for t in TEAM_ROLES:
+                if t.lower() in user_roles:
+                    found_team = t.lower()
+                    break
+            team = found_team if found_team else DEFAULT_TEAM
 
+        # Validate team
         if team != DEFAULT_TEAM and team.capitalize() not in TEAM_ROLES:
             await interaction.response.send_message(
-                f"❌ Invalid team '{team}'. Valid teams: {', '.join(TEAM_ROLES)} or 'all'.",
+                f"❌ Invalid team '{team}'. Valid teams: {', '.join(TEAM_ROLES)}.",
                 ephemeral=True
             )
             return
@@ -70,12 +57,11 @@ def setup_board_command(bot: Bot):
             # 1. Defer the response to avoid interaction timeout
             await interaction.response.defer(ephemeral=False)
 
-            # No completed_dict needed; board image will use DB-backed progress
+            # Always generate the board for the specific team (never 'all')
             success = generate_board_image(team=team)
             
             if success and os.path.exists(OUTPUT_FILE):
                 file = discord.File(OUTPUT_FILE)
-                #3the final response with the image
                 await interaction.followup.send(file=file)
                 
                 execution_time = time.time() - start_time
