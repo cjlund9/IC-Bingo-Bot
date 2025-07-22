@@ -50,7 +50,10 @@ class SubmissionManagementView(View):
 
                 # Get tile info for response
                 progress = get_tile_progress(self.team, normalized_tile_index)
-                tile_name = progress.get("tile_name", f"Tile {self.tile_index}")
+                from config import load_placeholders
+                placeholders = load_placeholders()
+                normalized_tile_index = self.tile_index - 1
+                tile_name = placeholders[normalized_tile_index]["name"] if (0 <= normalized_tile_index < len(placeholders)) else f"Tile {self.tile_index}"
                 
                 await interaction.message.edit(
                     content=f"✅ Approved submission for **{tile_name}** (Team: {self.team})\nDrop: **{self.drop}**",
