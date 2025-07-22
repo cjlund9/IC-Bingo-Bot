@@ -249,7 +249,7 @@ def remove_tile_submission(team: str, tile_index: int, submission_index: int) ->
         return False
 
 def approve_submission(submission_id: int, approver_id: int) -> bool:
-    """Approve an existing submission by updating its status."""
+    """Approve an existing submission by updating its status and team progress in real time."""
     try:
         conn = get_db_conn()
         cursor = conn.cursor()
@@ -264,6 +264,13 @@ def approve_submission(submission_id: int, approver_id: int) -> bool:
             conn.close()
             return False
         team_name, tile_index, user_id, drop_name, quantity = submission  # tile_index is 0-based
+        # Get the actual tile_id (primary key) from bingo_tiles
+        cursor.execute('SELECT id, drops_needed FROM bingo_tiles WHERE tile_index = ?', (tile_index,))
+        tile_row = cursor.fetchone()
+        if not tile_row:
+            conn.close()
+            return False
+        tile_id, drops_needed = tile_row
         # Update the submission status to approved
         cursor.execute('''
             UPDATE bingo_submissions 
@@ -271,24 +278,16 @@ def approve_submission(submission_id: int, approver_id: int) -> bool:
             WHERE id = ?
         ''', (approver_id, submission_id))
         # Update team progress
-        cursor.execute('''SELECT completed_count, total_required FROM bingo_team_progress WHERE team_name = ? AND tile_id = ?''', (team_name, tile_index))
+        cursor.execute('''SELECT completed_count, total_required FROM bingo_team_progress WHERE team_name = ? AND tile_id = ?''', (team_name, tile_id))
         progress_row = cursor.fetchone()
         if progress_row:
             current_count = progress_row[0]
             total_required = progress_row[1]
-            # For points-based tiles, add the quantity as points
-            if drop_name == "points":
-                new_count = current_count + quantity
-            else:
-                new_count = current_count + quantity
-            cursor.execute('''UPDATE bingo_team_progress SET completed_count = ? WHERE team_name = ? AND tile_id = ?''', (new_count, team_name, tile_index))
+            new_count = current_count + quantity
+            cursor.execute('''UPDATE bingo_team_progress SET completed_count = ? WHERE team_name = ? AND tile_id = ?''', (new_count, team_name, tile_id))
         else:
-            # Get total_required from tiles using tile_index (not id)
-            cursor.execute('SELECT drops_needed FROM bingo_tiles WHERE tile_index = ?', (tile_index,))
-            tile_row = cursor.fetchone()
-            if tile_row:
-                total_required = tile_row[0]
-                cursor.execute('''INSERT INTO bingo_team_progress (team_name, tile_id, completed_count, total_required) VALUES (?, ?, ?, ?)''', (team_name, tile_index, quantity, total_required))
+            total_required = drops_needed
+            cursor.execute('''INSERT INTO bingo_team_progress (team_name, tile_id, completed_count, total_required) VALUES (?, ?, ?, ?)''', (team_name, tile_id, quantity, total_required))
         conn.commit()
         conn.close()
         return True
