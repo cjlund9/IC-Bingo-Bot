@@ -64,7 +64,7 @@ class ApprovalView(View):
         else:
             # Fallback to old system if no submission_id
             from storage import mark_tile_submission
-            success = mark_tile_submission(self.team, self.tile_index, self.submitter.id, self.drop, quantity=1)
+            success = mark_tile_submission(self.team, self.tile_index - 1, self.submitter.id, self.drop, quantity=1)
         
         if success:
             await update_board_message(interaction.guild, interaction.guild.me, team=self.team)
@@ -122,7 +122,7 @@ class ApprovalView(View):
         else:
             # Fallback to old system if no submission_id
             from storage import mark_tile_submission
-            success = mark_tile_submission(self.team, self.tile_index, self.submitter.id, self.drop, quantity=1)
+            success = mark_tile_submission(self.team, self.tile_index - 1, self.submitter.id, self.drop, quantity=1)
         
         if success:
             from config import load_placeholders
