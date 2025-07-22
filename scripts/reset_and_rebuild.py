@@ -46,21 +46,21 @@ def rebuild_team_progress(conn):
     c.execute('DELETE FROM bingo_team_progress')
     # Get all approved submissions
     c.execute('''
-        SELECT team, tile_id, SUM(quantity) as total_approved
+        SELECT team_name, tile_id, SUM(quantity) as total_approved
         FROM bingo_submissions
         WHERE status = 'approved'
-        GROUP BY team, tile_id
+        GROUP BY team_name, tile_id
     ''')
     progress_rows = c.fetchall()
-    # For each (team, tile), get total_required from bingo_tiles
-    for team, tile_id, completed_count in progress_rows:
+    # For each (team_name, tile), get total_required from bingo_tiles
+    for team_name, tile_id, completed_count in progress_rows:
         c.execute('SELECT drops_needed FROM bingo_tiles WHERE id = ?', (tile_id,))
         row = c.fetchone()
         total_required = row[0] if row else 1
         c.execute('''
             INSERT INTO bingo_team_progress (team, tile_id, completed_count, total_required)
             VALUES (?, ?, ?, ?)
-        ''', (team, tile_id, completed_count, total_required))
+        ''', (team_name, tile_id, completed_count, total_required))
     conn.commit()
     print('bingo_team_progress rebuilt from approved submissions.')
 
