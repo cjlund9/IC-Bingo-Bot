@@ -199,8 +199,8 @@ async def on_ready():
         
         # Start background tasks
         bot.loop.create_task(background_maintenance())
-        setup_submit_command(bot)
-        setup_board_command(bot)
+        # setup_submit_command(bot)  # Moved to main()
+        # setup_board_command(bot)   # Moved to main()
             
     except Exception as e:
         logger.error(f"❌ Failed to sync commands: {e}")
@@ -251,8 +251,7 @@ async def main():
     # Register application commands
     try:
         setup_submit_command(bot)
-
-        
+        setup_board_command(bot)
         logger.info("✅ Application commands registered successfully")
     except Exception as e:
         logger.error(f"❌ Failed to register application commands: {e}")
