@@ -15,7 +15,7 @@ from board import generate_board_image, OUTPUT_FILE
 from database import DatabaseManager
 
 # Only allow the event host to use this command
-ALLOWED_USER_ID = 169282701046710272  # Set to your Discord user ID
+# ALLOWED_USER_ID = 169282701046710272  # Set to your Discord user ID
 DEFAULT_TEAM = "moles"  # Set to your default team name
 
 def setup_board_command(bot: Bot):
@@ -24,9 +24,6 @@ def setup_board_command(bot: Bot):
         description="Display the current bingo board"
     )
     async def board_cmd(interaction: Interaction):
-        if interaction.user.id != ALLOWED_USER_ID:
-            await interaction.response.send_message("❌ Only the event host can use this command right now.", ephemeral=True)
-            return
         start_time = time.time()
         await interaction.response.defer(ephemeral=False)
         success = generate_board_image(team=DEFAULT_TEAM)
