@@ -74,6 +74,10 @@ class ApprovalView(View):
             logger.info(f"[DEBUG] Calling update_board_message for team: {self.team}")
             await update_board_message(interaction.guild, interaction.guild.me, team=self.team)
             logger.info(f"[DEBUG] Finished update_board_message for team: {self.team}")
+            # Auto-generate both team boards
+            from board import generate_board_image
+            generate_board_image(team="Moles", output_file="board_moles.png")
+            generate_board_image(team="Obor", output_file="board_obor.png")
 
         from config import load_placeholders
         placeholders = load_placeholders()

@@ -138,7 +138,8 @@ def calculate_tile_status(completed_dict: Dict[str, Any], team: str) -> Dict[int
 
 def generate_board_image(placeholders: Optional[List[Dict[str, Any]]] = None, 
                         completed_dict: Optional[Dict[str, Any]] = None, 
-                        team: str = "all") -> bool:
+                        team: str = "all",
+                        output_file: Optional[str] = None) -> bool:
     """
     Generate bingo board image
     
@@ -146,6 +147,7 @@ def generate_board_image(placeholders: Optional[List[Dict[str, Any]]] = None,
         placeholders: List of tile data (optional, will load if not provided)
         completed_dict: Dictionary of completed data (optional)
         team: Team to generate board for (defaults to "all")
+        output_file: Optional output file path to save the image
     
     Returns:
         bool: True if successful, False otherwise
@@ -248,26 +250,11 @@ def generate_board_image(placeholders: Optional[List[Dict[str, Any]]] = None,
         draw.rectangle([0, 0, img_width - 1, img_height - 1], 
                       outline=(200, 200, 200, 255), width=2)
 
-        # Save image with timestamp to prevent caching
-        import time
-        timestamp = int(time.time())
-        temp_filename = f"board_{team}_{timestamp}.png"
-        image.save(temp_filename)
-        
-        # Copy to main output file
-        import shutil
-        shutil.copy2(temp_filename, OUTPUT_FILE)
-        
-        # Clean up temp file
-        try:
-            os.remove(temp_filename)
-        except OSError:
-            # File might not exist or be locked, which is fine
-            pass
-            
-        logger.info(f"✅ Board image saved to {OUTPUT_FILE} for team: {team}")
+        # Save image
+        save_path = output_file if output_file else OUTPUT_FILE
+        image.save(save_path)
+        logger.info(f"✅ Board image saved to {save_path} for team: {team}")
         return True
-        
     except Exception as e:
         logger.error(f"Error generating board image: {e}")
         return False

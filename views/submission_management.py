@@ -43,6 +43,10 @@ class SubmissionManagementView(View):
             if success:
                 # Update board
                 await update_board_message(interaction.guild, interaction.guild.me, team=self.team)
+                # Auto-generate both team boards
+                from board import generate_board_image
+                generate_board_image(team="Moles", output_file="board_moles.png")
+                generate_board_image(team="Obor", output_file="board_obor.png")
 
                 # Get tile info for response
                 progress = get_tile_progress(self.team, self.tile_index)
@@ -85,6 +89,11 @@ class SubmissionManagementView(View):
             await interaction.followup.send("Submission denied.", ephemeral=True)
             logger.info(f"Submission denied: Team={self.team}, Tile={self.tile_index + 1}, Drop={self.drop}")
             
+            # After denial, auto-generate both team boards
+            from board import generate_board_image
+            generate_board_image(team="Moles", output_file="board_moles.png")
+            generate_board_image(team="Obor", output_file="board_obor.png")
+            
         except Exception as e:
             logger.error(f"Error denying submission: {e}")
             await interaction.followup.send("❌ An error occurred while denying the submission.", ephemeral=True)
@@ -110,6 +119,11 @@ class SubmissionManagementView(View):
             )
             await interaction.followup.send("Submission marked on hold.", ephemeral=True)
             logger.info(f"Submission held: Team={self.team}, Tile={self.tile_index + 1}, Drop={self.drop}")
+            
+            # After hold, auto-generate both team boards
+            from board import generate_board_image
+            generate_board_image(team="Moles", output_file="board_moles.png")
+            generate_board_image(team="Obor", output_file="board_obor.png")
             
         except Exception as e:
             logger.error(f"Error holding submission: {e}")
