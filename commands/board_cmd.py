@@ -1,4 +1,3 @@
-# Entire file commented out for minimal bingo bot
 import discord
 import os
 import time
@@ -15,64 +14,27 @@ from utils.access import leadership_or_event_coordinator_check
 from board import generate_board_image, OUTPUT_FILE
 from database import DatabaseManager
 
-ALLOWED_USER_ID = 169282701046710272  # Temporary: Only this user can run /board
+# Only allow the event host to use this command
+ALLOWED_USER_ID = 169282701046710272  # Set to your Discord user ID
+DEFAULT_TEAM = "moles"  # Set to your default team name
 
 def setup_board_command(bot: Bot):
     @bot.tree.command(
         name="board",
-        description="Display the current bingo board",
-        guild=discord.Object(id=GUILD_ID)
+        description="Display the current bingo board"
     )
-    # @app_commands.check(leadership_or_event_coordinator_check)  # Temporarily disabled
-    @app_commands.describe(team="Team to display board for (optional, leadership/event coordinator only)")
-    @rate_limit(cooldown_seconds=10.0, max_requests_per_hour=30)  # Rate limit board updates
-    async def board_cmd(interaction: Interaction, team: str = None):
+    async def board_cmd(interaction: Interaction):
         if interaction.user.id != ALLOWED_USER_ID:
             await interaction.response.send_message("❌ Only the event host can use this command right now.", ephemeral=True)
             return
         start_time = time.time()
-        
-        # Determine the correct team (never use 'all' for a team-specific board)
-        # If no team is specified, try to infer from user roles, else use DEFAULT_TEAM
-        if team:
-            team = team.lower()
+        await interaction.response.defer(ephemeral=False)
+        success = generate_board_image(team=DEFAULT_TEAM)
+        if success and os.path.exists(OUTPUT_FILE):
+            file = discord.File(OUTPUT_FILE)
+            await interaction.followup.send(file=file)
         else:
-            # Try to infer from user roles
-            user_roles = [r.name.lower() for r in getattr(interaction.user, 'roles', [])]
-            found_team = None
-            for t in TEAM_ROLES:
-                if t.lower() in user_roles:
-                    found_team = t.lower()
-                    break
-            team = found_team if found_team else DEFAULT_TEAM
-
-        # Validate team
-        if team != DEFAULT_TEAM and team.capitalize() not in TEAM_ROLES:
-            await interaction.response.send_message(
-                f"❌ Invalid team '{team}'. Valid teams: {', '.join(TEAM_ROLES)}.",
-                ephemeral=True
-            )
-            return
-
-        try:
-            # 1. Defer the response to avoid interaction timeout
-            await interaction.response.defer(ephemeral=False)
-
-            # Always generate the board for the specific team (never 'all')
-            success = generate_board_image(team=team)
-            
-            if success and os.path.exists(OUTPUT_FILE):
-                file = discord.File(OUTPUT_FILE)
-                await interaction.followup.send(file=file)
-                
-                execution_time = time.time() - start_time
-                logger.info(f"Board command completed in {execution_time:.3f}s for team {team}")
-            else:
-                await interaction.followup.send("❌ Failed to generate board image.")
-                
-        except Exception as e:
-            logger.error(f"Error displaying board: {e}")
-            await interaction.followup.send(f"❌ Error generating board: {str(e)}")
+            await interaction.followup.send("❌ Failed to generate board image.")
 
     # Remove set_board_release command and related logic
     # @bot.tree.command(

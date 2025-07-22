@@ -21,7 +21,7 @@ load_dotenv()
 
 # Import command modules
 # Commented out unused command modules
-# from commands.board_cmd import setup_board_command
+from commands.board_cmd import setup_board_command
 # from commands.progress import setup_progress_command
 # from commands.manage import setup_manage_command
 # from commands.sync import setup_sync_command
@@ -199,6 +199,8 @@ async def on_ready():
         
         # Start background tasks
         bot.loop.create_task(background_maintenance())
+        setup_submit_command(bot)
+        setup_board_command(bot)
             
     except Exception as e:
         logger.error(f"❌ Failed to sync commands: {e}")
