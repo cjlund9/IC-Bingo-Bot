@@ -52,10 +52,10 @@ class HoldReviewView(View):
             try:
                 await update_board_message(interaction.guild, interaction.guild.me, team=self.team)
                 logger.info(f"Board message updated for team: {self.team}")
-                # Auto-generate both team boards
-                from board import generate_board_image
-                generate_board_image(team="Moles", output_file="board_moles.png")
-                generate_board_image(team="Obor", output_file="board_obor.png")
+                # Auto-generate both team boards and update Discord channels
+                from core.update_board import update_board_message
+                await update_board_message(interaction.guild, interaction.guild.me, team="Moles")
+                await update_board_message(interaction.guild, interaction.guild.me, team="Obor")
             except Exception as e:
                 logger.error(f"Error updating board message in Discord after hold approval: {e}")
                 await interaction.followup.send("❌ Failed to update board message in Discord. Please contact an admin.", ephemeral=True)
