@@ -21,7 +21,8 @@ DEFAULT_TEAM = "moles"  # Set to your default team name
 def setup_board_command(bot: Bot):
     @bot.tree.command(
         name="board",
-        description="Display the current bingo board"
+        description="Display the current bingo board",
+        guild=discord.Object(id=GUILD_ID)
     )
     async def board_cmd(interaction: Interaction):
         start_time = time.time()
