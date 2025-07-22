@@ -69,7 +69,11 @@ class ApprovalView(View):
             success = mark_tile_submission(self.team, self.tile_index, self.submitter.id, self.drop, quantity=1)
         
         if success:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"[DEBUG] Calling update_board_message for team: {self.team}")
             await update_board_message(interaction.guild, interaction.guild.me, team=self.team)
+            logger.info(f"[DEBUG] Finished update_board_message for team: {self.team}")
 
         from config import load_placeholders
         placeholders = load_placeholders()
