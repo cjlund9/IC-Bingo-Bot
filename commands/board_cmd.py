@@ -16,7 +16,7 @@ from database import DatabaseManager
 
 # Only allow the event host to use this command
 # ALLOWED_USER_ID = 169282701046710272  # Set to your Discord user ID
-DEFAULT_TEAM = "moles"  # Set to your default team name
+DEFAULT_TEAM = "Moles"  # Set to your default team name
 
 def setup_board_command(bot: Bot):
     @bot.tree.command(
