@@ -30,9 +30,8 @@ def create_progress_embed(team: str, tile_index: Optional[int] = None, tile_name
         actual_tile_index = db_tile_id - 1 if db_tile_id is not None else 0
         display_tile_name = progress.get("tile_name", tile_name)
     else:
-        # Normalize user input (1-based to 0-based)
-        normalized_tile_index = tile_index - 1 if tile_index is not None else 0
-        progress = get_tile_progress(team, normalized_tile_index)
+        # Use tile_index as provided (0-based)
+        progress = get_tile_progress(team, tile_index)
         if not progress:
             embed = discord.Embed(
                 title="❌ Error",
@@ -40,8 +39,8 @@ def create_progress_embed(team: str, tile_index: Optional[int] = None, tile_name
                 color=0xFF0000
             )
             return embed
-        actual_tile_index = normalized_tile_index
-        display_tile_name = progress.get("tile_name", f"Tile {tile_index}")
+        actual_tile_index = tile_index
+        display_tile_name = progress.get("tile_name", f"Tile {tile_index + 1}")
     
     # Add tile indicator (A1, A2, etc.)
     row = actual_tile_index // 10  # 10x10 board

@@ -42,10 +42,10 @@ class HoldReviewView(View):
             return
 
         from storage import mark_tile_submission
-        # Use self.tile_index for DB and placeholder lookups (already normalized)
+        # Use self.tile_index for DB and placeholder lookups (already 0-based)
         success = mark_tile_submission(self.team, self.tile_index, self.submitter.id, self.drop, quantity=1)
         if not success:
-            logger.error(f"[HOLD APPROVE] Failed to mark tile submission for team={self.team}, tile_index={self.tile_index + 1}, submitter={getattr(self.submitter, 'id', None)}, drop={self.drop}")
+            logger.error(f"[HOLD APPROVE] Failed to mark tile submission for team={self.team}, tile_index={self.tile_index}, submitter={getattr(self.submitter, 'id', None)}, drop={self.drop}")
             await interaction.response.send_message("❌ Failed to approve submission in the database. Please contact an admin.", ephemeral=True)
             return
         try:

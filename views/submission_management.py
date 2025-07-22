@@ -15,7 +15,7 @@ class SubmissionManagementView(View):
     def __init__(self, team: str, tile_index: int, drop: str):
         super().__init__(timeout=None)
         self.team = team
-        # Use tile_index as received (already 0-based from UI)
+        # Use tile_index as provided (0-based) for all logic and DB
         self.tile_index = tile_index
         self.drop = drop
 
@@ -35,8 +35,8 @@ class SubmissionManagementView(View):
         await interaction.response.defer(ephemeral=True)
 
         try:
-            # Use self.tile_index for DB and display (already normalized)
-            logger.info(f"[DEBUG] UI submitted tile_index={self.tile_index + 1}")
+            # Use self.tile_index for DB and display (already 0-based)
+            logger.info(f"[DEBUG] UI submitted tile_index={self.tile_index}")
             # Mark the submission
             success = mark_tile_submission(self.team, self.tile_index, interaction.user.id, self.drop, quantity=1)
             
@@ -179,7 +179,7 @@ class SubmissionSelectView(View):
     def __init__(self, team: str, tile_index: int, submissions: List[Dict[str, Any]]):
         super().__init__(timeout=60)  # 60 second timeout
         self.team = team
-        self.tile_index = tile_index - 1 # Normalize tile_index from user input (1-based to 0-based)
+        self.tile_index = tile_index  # Use as provided (0-based)
         self.submissions = submissions
 
         # Create select menu
@@ -209,8 +209,8 @@ class SubmissionSelect(Select):
             submission_index = int(self.values[0])
             view = self.view
             
-            # Use tile_index directly for DB and display
-            logger.info(f"[DEBUG] UI submitted tile_index={view.tile_index + 1}")
+            # Use tile_index directly for DB and display (0-based)
+            logger.info(f"[DEBUG] UI submitted tile_index={view.tile_index}")
             # Remove the submission
             success = remove_tile_submission(view.team, view.tile_index, submission_index)
             

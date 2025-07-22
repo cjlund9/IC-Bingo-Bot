@@ -246,45 +246,19 @@ def setup_submit_command(bot: Bot):
 
             team = get_user_team(member)
 
-            # Check if this is a points-based tile that needs points input
-            is_points_tile = False
-            target_points = 0
-            
-            # Check if the tile is points-based
-            conn = sqlite3.connect('leaderboard.db')
-            cursor = conn.cursor()
-            cursor.execute('''
-                SELECT bt.drops_needed, btd.drop_name 
-                FROM bingo_tiles bt 
-                LEFT JOIN bingo_tile_drops btd ON bt.id = btd.tile_id 
-                WHERE bt.tile_index = ?
-            ''', (tile_index,))
-            
-            rows = cursor.fetchall()
-            conn.close()
-            
-            drops_needed = rows[0][0] if rows else 1
-            drops = [row[1] for row in rows if row[1] is not None]
-            
-            if "points" in drops and drops_needed > 1:
-                is_points_tile = True
-                target_points = drops_needed
-
-            # --- SIMPLIFIED POINT TILE LOGIC ---
-            if is_points_tile:
-                # Validate that item is a positive integer
-                if not item.isdigit() or int(item) <= 0:
-                    await interaction.followup.send("❌ For point tiles, please enter a positive number of points in the 'item' field.", ephemeral=True)
-                    return
-                points_value = int(item)
-                drop_name = "points"
-                quantity = points_value
-            else:
-                drop_name = item
-                quantity = 1
+            # --- REMOVE POINT TILE LOGIC ---
+            # Strict drop name validation for all tiles
+            drop_name = item
+            if not drops or drop_name not in drops:
+                await interaction.followup.send(
+                    f"❌ Invalid drop name for this tile. Allowed drops: {', '.join(drops) if drops else 'None'}. Please select a valid drop.",
+                    ephemeral=True
+                )
+                return
+            quantity = 1
 
             # Log tile index and name for debugging
-            logger.info(f"[SUBMIT] Submitting for tile_index={tile_index}, tile_name={tile_name}, is_points_tile={is_points_tile}")
+            logger.info(f"[SUBMIT] Submitting for tile_index={tile_index}, tile_name={tile_name}, is_points_tile={False}")
 
             # Insert submission into database
             conn = sqlite3.connect('leaderboard.db')
@@ -319,19 +293,13 @@ def setup_submit_command(bot: Bot):
                 return
 
             from views.approval import ApprovalView
-            view = ApprovalView(member, tile_index, team, drop=drop_name if not is_points_tile else f"{points_value:,} points", submission_id=submission_id)
+            view = ApprovalView(member, tile_index, team, drop=drop_name, submission_id=submission_id)
 
             # Create submission message
-            if is_points_tile:
-                submission_content = (
-                    f"📥 Points Submission from {member.mention} for **{tile_name}** (Team: {team})\n"
-                    f"Points: **{points_value:,}**"
-                )
-            else:
-                submission_content = (
-                    f"📥 Submission from {member.mention} for **{tile_name}** (Team: {team})\n"
-                    f"Drop: **{item}**"
-                )
+            submission_content = (
+                f"📥 Submission from {member.mention} for **{tile_name}** (Team: {team})\n"
+                f"Drop: **{item}**"
+            )
 
             await review_channel.send(
                 content=submission_content,
