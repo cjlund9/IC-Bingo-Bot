@@ -34,26 +34,20 @@ class SubmissionManagementView(View):
         await interaction.response.defer(ephemeral=True)
 
         try:
-            # Normalize tile_index from UI (1-based to 0-based)
+            # Use tile_index directly for DB and display
             logger.info(f"[DEBUG] UI submitted tile_index={self.tile_index}")
-            normalized_tile_index = self.tile_index - 1
-            logger.info(f"[DEBUG] Normalized tile_index={normalized_tile_index}")
-            # Use normalized_tile_index for all DB operations below
-            # Debug log for tile index
-            logger.info(f"[DEBUG] Submitting: team={self.team}, tile_index={self.tile_index}")
             # Mark the submission
-            success = mark_tile_submission(self.team, normalized_tile_index, interaction.user.id, self.drop, quantity=1)
+            success = mark_tile_submission(self.team, self.tile_index, interaction.user.id, self.drop, quantity=1)
             
             if success:
                 # Update board
                 await update_board_message(interaction.guild, interaction.guild.me, team=self.team)
 
                 # Get tile info for response
-                progress = get_tile_progress(self.team, normalized_tile_index)
+                progress = get_tile_progress(self.team, self.tile_index)
                 from config import load_placeholders
                 placeholders = load_placeholders()
-                normalized_tile_index = self.tile_index - 1
-                tile_name = placeholders[normalized_tile_index]["name"] if (0 <= normalized_tile_index < len(placeholders)) else f"Tile {self.tile_index}"
+                tile_name = placeholders[self.tile_index]["name"] if (0 <= self.tile_index < len(placeholders)) else f"Tile {self.tile_index}"
                 
                 await interaction.message.edit(
                     content=f"✅ Approved submission for **{tile_name}** (Team: {self.team})\nDrop: **{self.drop}**",
@@ -77,12 +71,10 @@ class SubmissionManagementView(View):
         await interaction.response.defer(ephemeral=True)
 
         try:
-            # Normalize tile_index from UI (1-based to 0-based)
+            # Use tile_index directly for DB and display
             logger.info(f"[DEBUG] UI submitted tile_index={self.tile_index}")
-            normalized_tile_index = self.tile_index - 1
-            logger.info(f"[DEBUG] Normalized tile_index={normalized_tile_index}")
             # Get tile info for response
-            progress = get_tile_progress(self.team, normalized_tile_index)
+            progress = get_tile_progress(self.team, self.tile_index)
             tile_name = progress.get("tile_name", f"Tile {self.tile_index}")
             
             await interaction.message.edit(
@@ -105,12 +97,10 @@ class SubmissionManagementView(View):
         await interaction.response.defer(ephemeral=True)
 
         try:
-            # Normalize tile_index from UI (1-based to 0-based)
+            # Use tile_index directly for DB and display
             logger.info(f"[DEBUG] UI submitted tile_index={self.tile_index}")
-            normalized_tile_index = self.tile_index - 1
-            logger.info(f"[DEBUG] Normalized tile_index={normalized_tile_index}")
             # Get tile info for response
-            progress = get_tile_progress(self.team, normalized_tile_index)
+            progress = get_tile_progress(self.team, self.tile_index)
             tile_name = progress.get("tile_name", f"Tile {self.tile_index}")
             
             await interaction.message.edit(
@@ -140,11 +130,9 @@ class SubmissionRemovalView(View):
 
     async def load_submissions(self):
         """Load submissions for the tile"""
-        # Normalize tile_index from UI (1-based to 0-based)
+        # Use tile_index directly for DB and display
         logger.info(f"[DEBUG] UI submitted tile_index={self.tile_index}")
-        normalized_tile_index = self.tile_index - 1
-        logger.info(f"[DEBUG] Normalized tile_index={normalized_tile_index}")
-        progress = get_tile_progress(self.team, normalized_tile_index)
+        progress = get_tile_progress(self.team, self.tile_index)
         self.submissions = progress.get("submissions", [])
         return self.submissions
 
@@ -220,12 +208,10 @@ class SubmissionSelect(Select):
             submission_index = int(self.values[0])
             view = self.view
             
-            # Normalize tile_index from UI (1-based to 0-based)
+            # Use tile_index directly for DB and display
             logger.info(f"[DEBUG] UI submitted tile_index={view.tile_index}")
-            normalized_tile_index = view.tile_index - 1
-            logger.info(f"[DEBUG] Normalized tile_index={normalized_tile_index}")
             # Remove the submission
-            success = remove_tile_submission(view.team, normalized_tile_index, submission_index)
+            success = remove_tile_submission(view.team, view.tile_index, submission_index)
             
             if success:
                 # Update board

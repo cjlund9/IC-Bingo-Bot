@@ -64,16 +64,15 @@ class ApprovalView(View):
         else:
             # Fallback to old system if no submission_id
             from storage import mark_tile_submission
-            success = mark_tile_submission(self.team, self.tile_index - 1, self.submitter.id, self.drop, quantity=1)
+            success = mark_tile_submission(self.team, self.tile_index, self.submitter.id, self.drop, quantity=1)
         
         if success:
             await update_board_message(interaction.guild, interaction.guild.me, team=self.team)
 
         from config import load_placeholders
         placeholders = load_placeholders()
-        normalized_tile_index = self.tile_index - 1
         # Defensive check for tile index
-        if not (0 <= normalized_tile_index < len(placeholders)):
+        if not (0 <= self.tile_index < len(placeholders)):
             import logging
             logger = logging.getLogger(__name__)
             logger.error(f"Invalid tile index: {self.tile_index}, placeholders length: {len(placeholders)}")
@@ -83,7 +82,7 @@ class ApprovalView(View):
             )
             await interaction.followup.send(f"❌ Invalid tile index: {self.tile_index}. Please contact an admin.", ephemeral=True)
             return
-        tile_name = placeholders[normalized_tile_index]["name"]
+        tile_name = placeholders[self.tile_index]["name"]
 
         await interaction.message.edit(
             content=f"✅ Accepted **{self.submitter.display_name}** for tile **{tile_name}** (Team: {self.team})\nDrop: **{self.drop}**",
@@ -123,7 +122,7 @@ class ApprovalView(View):
         else:
             # Fallback to old system if no submission_id
             from storage import mark_tile_submission
-            success = mark_tile_submission(self.team, self.tile_index - 1, self.submitter.id, self.drop, quantity=1)
+            success = mark_tile_submission(self.team, self.tile_index, self.submitter.id, self.drop, quantity=1)
         
         if success:
             from config import load_placeholders
@@ -141,9 +140,8 @@ class ApprovalView(View):
 
         from config import load_placeholders
         placeholders = load_placeholders()
-        normalized_tile_index = self.tile_index - 1
         # Defensive check for tile index
-        if not (0 <= normalized_tile_index < len(placeholders)):
+        if not (0 <= self.tile_index < len(placeholders)):
             import logging
             logger = logging.getLogger(__name__)
             logger.error(f"Invalid tile index: {self.tile_index}, placeholders length: {len(placeholders)}")
@@ -153,7 +151,7 @@ class ApprovalView(View):
             )
             await interaction.followup.send(f"❌ Invalid tile index: {self.tile_index}. Please contact an admin.", ephemeral=True)
             return
-        tile_name = placeholders[normalized_tile_index]["name"]
+        tile_name = placeholders[self.tile_index]["name"]
 
         await interaction.message.edit(
             content=f"❌ Denied **{self.submitter.display_name}** for **{tile_name}** (Team: {self.team})\nDrop: **{self.drop}**",

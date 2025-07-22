@@ -222,21 +222,19 @@ def setup_submit_command(bot: Bot):
                 await interaction.followup.send("❌ Invalid tile selection. Please select a tile from the list, not by typing the name.", ephemeral=True)
                 return
 
-            # Normalize tile_index from UI (1-based to 0-based)
+            # Use tile_index directly for DB and display
             logger.info(f"[DEBUG] UI submitted tile_index={tile_index}")
-            normalized_tile_index = tile_index - 1
-            logger.info(f"[DEBUG] Normalized tile_index={normalized_tile_index}")
-
+            # No normalization
             from config import load_placeholders
             placeholders = load_placeholders()
-            if not (0 <= normalized_tile_index < len(placeholders)):
+            if not (0 <= tile_index < len(placeholders)):
                 await interaction.followup.send("❌ Invalid tile selection. Please select a valid tile from the list.", ephemeral=True)
                 return
 
             # Get tile data from database
             conn = sqlite3.connect('leaderboard.db')
             cursor = conn.cursor()
-            cursor.execute('SELECT id, name FROM bingo_tiles WHERE tile_index = ?', (normalized_tile_index,))
+            cursor.execute('SELECT id, name FROM bingo_tiles WHERE tile_index = ?', (tile_index,))
             tile_row = cursor.fetchone()
             conn.close()
             
@@ -260,7 +258,7 @@ def setup_submit_command(bot: Bot):
                 FROM bingo_tiles bt 
                 LEFT JOIN bingo_tile_drops btd ON bt.id = btd.tile_id 
                 WHERE bt.tile_index = ?
-            ''', (normalized_tile_index,))
+            ''', (tile_index,))
             
             rows = cursor.fetchall()
             conn.close()
