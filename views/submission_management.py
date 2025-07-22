@@ -15,7 +15,8 @@ class SubmissionManagementView(View):
     def __init__(self, team: str, tile_index: int, drop: str):
         super().__init__(timeout=None)
         self.team = team
-        self.tile_index = tile_index
+        # Normalize tile_index from user input (1-based to 0-based)
+        self.tile_index = tile_index - 1
         self.drop = drop
 
     async def interaction_allowed(self, interaction: Interaction) -> bool:
@@ -34,8 +35,8 @@ class SubmissionManagementView(View):
         await interaction.response.defer(ephemeral=True)
 
         try:
-            # Use tile_index directly for DB and display
-            logger.info(f"[DEBUG] UI submitted tile_index={self.tile_index}")
+            # Use self.tile_index for DB and display (already normalized)
+            logger.info(f"[DEBUG] UI submitted tile_index={self.tile_index + 1}")
             # Mark the submission
             success = mark_tile_submission(self.team, self.tile_index, interaction.user.id, self.drop, quantity=1)
             
@@ -47,14 +48,14 @@ class SubmissionManagementView(View):
                 progress = get_tile_progress(self.team, self.tile_index)
                 from config import load_placeholders
                 placeholders = load_placeholders()
-                tile_name = placeholders[self.tile_index]["name"] if (0 <= self.tile_index < len(placeholders)) else f"Tile {self.tile_index}"
+                tile_name = placeholders[self.tile_index]["name"] if (0 <= self.tile_index < len(placeholders)) else f"Tile {self.tile_index + 1}"
                 
                 await interaction.message.edit(
                     content=f"✅ Approved submission for **{tile_name}** (Team: {self.team})\nDrop: **{self.drop}**",
                     view=None
                 )
                 await interaction.followup.send("Submission approved and board updated!", ephemeral=True)
-                logger.info(f"Submission approved: Team={self.team}, Tile={self.tile_index}, Drop={self.drop}")
+                logger.info(f"Submission approved: Team={self.team}, Tile={self.tile_index + 1}, Drop={self.drop}")
             else:
                 await interaction.followup.send("❌ Failed to approve submission.", ephemeral=True)
                 
@@ -72,17 +73,17 @@ class SubmissionManagementView(View):
 
         try:
             # Use tile_index directly for DB and display
-            logger.info(f"[DEBUG] UI submitted tile_index={self.tile_index}")
+            logger.info(f"[DEBUG] UI submitted tile_index={self.tile_index + 1}")
             # Get tile info for response
             progress = get_tile_progress(self.team, self.tile_index)
-            tile_name = progress.get("tile_name", f"Tile {self.tile_index}")
+            tile_name = progress.get("tile_name", f"Tile {self.tile_index + 1}")
             
             await interaction.message.edit(
                 content=f"❌ Denied submission for **{tile_name}** (Team: {self.team})\nDrop: **{self.drop}**",
                 view=None
             )
             await interaction.followup.send("Submission denied.", ephemeral=True)
-            logger.info(f"Submission denied: Team={self.team}, Tile={self.tile_index}, Drop={self.drop}")
+            logger.info(f"Submission denied: Team={self.team}, Tile={self.tile_index + 1}, Drop={self.drop}")
             
         except Exception as e:
             logger.error(f"Error denying submission: {e}")
@@ -98,17 +99,17 @@ class SubmissionManagementView(View):
 
         try:
             # Use tile_index directly for DB and display
-            logger.info(f"[DEBUG] UI submitted tile_index={self.tile_index}")
+            logger.info(f"[DEBUG] UI submitted tile_index={self.tile_index + 1}")
             # Get tile info for response
             progress = get_tile_progress(self.team, self.tile_index)
-            tile_name = progress.get("tile_name", f"Tile {self.tile_index}")
+            tile_name = progress.get("tile_name", f"Tile {self.tile_index + 1}")
             
             await interaction.message.edit(
                 content=f"⏸️ On Hold: **{tile_name}** (Team: {self.team})\nDrop: **{self.drop}**",
                 view=None
             )
             await interaction.followup.send("Submission marked on hold.", ephemeral=True)
-            logger.info(f"Submission held: Team={self.team}, Tile={self.tile_index}, Drop={self.drop}")
+            logger.info(f"Submission held: Team={self.team}, Tile={self.tile_index + 1}, Drop={self.drop}")
             
         except Exception as e:
             logger.error(f"Error holding submission: {e}")
@@ -118,7 +119,7 @@ class SubmissionRemovalView(View):
     def __init__(self, team: str, tile_index: int):
         super().__init__(timeout=None)
         self.team = team
-        self.tile_index = tile_index
+        self.tile_index = tile_index - 1 # Normalize tile_index from user input (1-based to 0-based)
         self.submissions = []
 
     async def interaction_allowed(self, interaction: Interaction) -> bool:
@@ -131,7 +132,7 @@ class SubmissionRemovalView(View):
     async def load_submissions(self):
         """Load submissions for the tile"""
         # Use tile_index directly for DB and display
-        logger.info(f"[DEBUG] UI submitted tile_index={self.tile_index}")
+        logger.info(f"[DEBUG] UI submitted tile_index={self.tile_index + 1}")
         progress = get_tile_progress(self.team, self.tile_index)
         self.submissions = progress.get("submissions", [])
         return self.submissions
@@ -178,7 +179,7 @@ class SubmissionSelectView(View):
     def __init__(self, team: str, tile_index: int, submissions: List[Dict[str, Any]]):
         super().__init__(timeout=60)  # 60 second timeout
         self.team = team
-        self.tile_index = tile_index
+        self.tile_index = tile_index - 1 # Normalize tile_index from user input (1-based to 0-based)
         self.submissions = submissions
 
         # Create select menu
@@ -209,7 +210,7 @@ class SubmissionSelect(Select):
             view = self.view
             
             # Use tile_index directly for DB and display
-            logger.info(f"[DEBUG] UI submitted tile_index={view.tile_index}")
+            logger.info(f"[DEBUG] UI submitted tile_index={view.tile_index + 1}")
             # Remove the submission
             success = remove_tile_submission(view.team, view.tile_index, submission_index)
             
@@ -223,7 +224,7 @@ class SubmissionSelect(Select):
                     f"Board has been updated.",
                     ephemeral=True
                 )
-                logger.info(f"Submission removed: Team={view.team}, Tile={view.tile_index}, Index={submission_index}")
+                logger.info(f"Submission removed: Team={view.team}, Tile={view.tile_index + 1}, Index={submission_index}")
             else:
                 await interaction.followup.send("❌ Failed to remove submission.", ephemeral=True)
 

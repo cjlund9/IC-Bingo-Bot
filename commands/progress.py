@@ -30,7 +30,9 @@ def create_progress_embed(team: str, tile_index: Optional[int] = None, tile_name
         actual_tile_index = db_tile_id - 1 if db_tile_id is not None else 0
         display_tile_name = progress.get("tile_name", tile_name)
     else:
-        progress = get_tile_progress(team, tile_index)
+        # Normalize user input (1-based to 0-based)
+        normalized_tile_index = tile_index - 1 if tile_index is not None else 0
+        progress = get_tile_progress(team, normalized_tile_index)
         if not progress:
             embed = discord.Embed(
                 title="❌ Error",
@@ -38,8 +40,7 @@ def create_progress_embed(team: str, tile_index: Optional[int] = None, tile_name
                 color=0xFF0000
             )
             return embed
-        # Convert database ID (1-based) to board index (0-based)
-        actual_tile_index = tile_index - 1 if tile_index is not None else 0
+        actual_tile_index = normalized_tile_index
         display_tile_name = progress.get("tile_name", f"Tile {tile_index}")
     
     # Add tile indicator (A1, A2, etc.)
@@ -48,86 +49,20 @@ def create_progress_embed(team: str, tile_index: Optional[int] = None, tile_name
     row_letter = chr(65 + row)  # A=65, B=66, etc.
     col_number = col + 1  # 1-based column numbers
     tile_indicator = f"{row_letter}{col_number}"
-    tile_name_with_indicator = f"{tile_indicator}: {display_tile_name}"
     
-    completed_count = progress.get("completed_count", 0)
-    total_required = progress.get("total_required", 1)
-    progress_percentage = progress.get("progress_percentage", 0)
-    submissions = progress.get("submissions", [])
-    missing_drops = progress.get("missing_drops", [])
-    
-    # Determine color based on progress
-    if progress.get("is_complete", False):
-        color = 0x00FF00  # Green for complete
-    elif completed_count > 0:
-        color = 0xFFA500  # Orange for in progress
-    else:
-        color = 0x808080  # Gray for not started
-        
     embed = discord.Embed(
-        title=f"📊 {tile_name_with_indicator} Progress",
-        description=f"**Team:** {team.capitalize()}",
-        color=color
+        title=f"Progress for {display_tile_name} ({tile_indicator})",
+        color=0x00FF00
     )
-    
-    # Progress bar
-    progress_bar = "█" * int(progress_percentage / 10) + "░" * (10 - int(progress_percentage / 10))
-    
-    # For points-based tiles, show points instead of drops
-    if progress.get("points_based", False):
-        if progress.get("resin_progress"):
-            # For Chugging Barrel, show resin progress
-            embed.add_field(
-                name="Progress",
-                value=f"{progress_bar} {completed_count:,}/{total_required:,} total ({progress_percentage:.1f}%)",
-                inline=False
-            )
-        else:
-            embed.add_field(
-                name="Progress",
-                value=f"{progress_bar} {completed_count:,}/{total_required:,} points ({progress_percentage:.1f}%)",
-                inline=False
-            )
+    embed.add_field(name="Tile Index", value=str(actual_tile_index + 1), inline=True)
+    embed.add_field(name="Indicator", value=tile_indicator, inline=True)
+    embed.add_field(name="Progress", value=f"{progress.get('completed_count', 0)}/{progress.get('total_required', 1)}", inline=True)
+    if progress.get("is_complete", False):
+        embed.add_field(name="Status", value="✅ Complete", inline=False)
+    elif progress.get("completed_count", 0) > 0:
+        embed.add_field(name="Status", value="🟡 In Progress", inline=False)
     else:
-        embed.add_field(
-            name="Progress",
-            value=f"{progress_bar} {completed_count}/{total_required} ({progress_percentage:.1f}%)",
-            inline=False
-        )
-    
-    # Submissions
-    if submissions:
-        submission_text = "\n".join([
-            f"• {sub['drop_name']} (x{sub['quantity']}) by <@{sub['user_id']}>"
-            for sub in submissions
-        ])
-        embed.add_field(
-            name="📝 Submissions",
-            value=submission_text[:1024] + "..." if len(submission_text) > 1024 else submission_text,
-            inline=False
-        )
-    
-    # Resin progress for Chugging Barrel
-    if progress.get("resin_progress"):
-        resin_text = "\n".join(progress["resin_progress"])
-        embed.add_field(
-            name="🌿 Resin Progress",
-            value=resin_text,
-            inline=False
-        )
-    
-    # Missing drops
-    if missing_drops:
-        missing_text = "\n".join([f"• {drop}" for drop in missing_drops[:10]])  # Limit to 10 items
-        if len(missing_drops) > 10:
-            missing_text += f"\n... and {len(missing_drops) - 10} more"
-        embed.add_field(
-            name="❌ Missing Drops",
-            value=missing_text,
-            inline=False
-        )
-    
-    embed.set_footer(text=f"Team: {team.capitalize()}")
+        embed.add_field(name="Status", value="⬜ Not Started", inline=False)
     return embed
 
 def setup_progress_command(bot: Bot):
@@ -172,7 +107,7 @@ def setup_progress_command(bot: Bot):
     @app_commands.check(team_member_access_check)
     @app_commands.describe(
         team="Team to show progress for (optional, defaults to your assigned team)",
-        tile="Tile index to show specific progress",
+        tile="Tile index to show specific progress (1-based)",
         tile_name="Tile name to search for (autocomplete available)"
     )
     @app_commands.autocomplete(tile_name=tile_name_autocomplete)
@@ -195,17 +130,10 @@ def setup_progress_command(bot: Bot):
                 )
                 return
             
-            # Validate tile parameters
-            if tile is not None and tile_name is not None:
-                await interaction.response.send_message(
-                    "❌ Please provide either a tile index OR a tile name, not both.",
-                    ephemeral=True
-                )
-                return
-            
-            # Create and send embed
-            embed = create_progress_embed(team, tile, tile_name)
-            await interaction.response.send_message(embed=embed)
+            # Normalize tile index if provided
+            normalized_tile_index = tile - 1 if tile is not None else None
+            embed = create_progress_embed(team, tile_index=tile, tile_name=tile_name)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
             
             logger.info(f"Progress viewed: Team={team}, Tile={tile}, TileName={tile_name}")
             

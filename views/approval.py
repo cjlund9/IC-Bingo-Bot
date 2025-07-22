@@ -11,7 +11,8 @@ class ApprovalView(View):
     def __init__(self, submitter: discord.User, tile_index: int, team: str, drop: str, submission_id: int = None):
         super().__init__(timeout=None)
         self.submitter = submitter
-        self.tile_index = tile_index
+        # Normalize tile_index from user input (1-based to 0-based)
+        self.tile_index = tile_index - 1
         self.team = team
         self.drop = drop
         self.submission_id = submission_id  # Store submission ID for approval
@@ -37,8 +38,8 @@ class ApprovalView(View):
         if not self.is_valid_index:
             import logging
             logger = logging.getLogger(__name__)
-            logger.warning(f"[APPROVAL] Attempted to approve invalid tile index: {self.tile_index}, submission_id: {self.submission_id}, team: {self.team}, drop: {self.drop}, submitter: {getattr(self.submitter, 'id', None)}. Approval denied.")
-            await interaction.response.send_message(f"❌ Invalid tile index: {self.tile_index}. Approval denied. Please contact an admin.", ephemeral=True)
+            logger.warning(f"[APPROVAL] Attempted to approve invalid tile index: {self.tile_index + 1}, submission_id: {self.submission_id}, team: {self.team}, drop: {self.drop}, submitter: {getattr(self.submitter, 'id', None)}. Approval denied.")
+            await interaction.response.send_message(f"❌ Invalid tile index: {self.tile_index + 1}. Approval denied. Please contact an admin.", ephemeral=True)
             return
         if not await self.interaction_allowed(interaction):
             await interaction.response.send_message("❌ Only leadership or event coordinators can accept submissions.", ephemeral=True)

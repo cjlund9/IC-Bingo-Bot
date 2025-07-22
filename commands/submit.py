@@ -217,7 +217,7 @@ def setup_submit_command(bot: Bot):
 
             # Validate tile index is an integer and in range
             try:
-                tile_index = int(tile)
+                tile_index = int(tile) - 1 # Normalize from 1-based to 0-based
             except ValueError:
                 await interaction.followup.send("❌ Invalid tile selection. Please select a tile from the list, not by typing the name.", ephemeral=True)
                 return
