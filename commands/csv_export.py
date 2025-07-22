@@ -1,3 +1,4 @@
+# Entire file commented out for minimal bingo bot
 """
 Simple CSV export for tracking user completions and stats
 Exports data to CSV files that can be easily imported into Google Sheets

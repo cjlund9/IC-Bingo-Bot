@@ -20,19 +20,22 @@ import psutil
 load_dotenv()
 
 # Import command modules
-from commands.submit import setup_submit_command
-from commands.board_cmd import setup_board_command
-from commands.progress import setup_progress_command
-from commands.manage import setup_manage_command
-from commands.sync import setup_sync_command
-from commands.teams_consolidated import setup_teams_consolidated_command
-from commands.stats import setup_stats_command
-from commands.leaderboard_cmd import setup_leaderboard_commands
-from commands.teams import setup_teams_command
+# Commented out unused command modules
+# from commands.board_cmd import setup_board_command
+# from commands.progress import setup_progress_command
+# from commands.manage import setup_manage_command
+# from commands.sync import setup_sync_command
+# from commands.teams_consolidated import setup_teams_consolidated_command
+# from commands.stats import setup_stats_command
+# from commands.leaderboard_cmd import setup_leaderboard_commands
+# from commands.teams import setup_teams_command
+# from commands.monitor import setup_monitor_command
+# from commands.csv_export import setup_csv_export_command
 # from commands.shop_cmd import setup_shop_commands
-from commands.monitor import setup_monitor_command
-from commands.csv_export import setup_csv_export_command
 # from commands.wom_sync import setup_wom_sync_commands
+
+# Only keep the core submit command
+from commands.submit import setup_submit_command
 
 
 # Import utilities
@@ -246,18 +249,6 @@ async def main():
     # Register application commands
     try:
         setup_submit_command(bot)
-        setup_board_command(bot)
-        setup_progress_command(bot)
-        setup_manage_command(bot)
-        setup_sync_command(bot)
-        setup_teams_command(bot)
-        setup_teams_consolidated_command(bot)
-        setup_stats_command(bot)
-        # setup_leaderboard_commands(bot)  # Temporarily disabled
-        # setup_shop_commands(bot)  # Temporarily disabled
-        setup_monitor_command(bot)
-        setup_csv_export_command(bot)
-        # setup_wom_sync_commands(bot)  # Temporarily disabled
 
         
         logger.info("✅ Application commands registered successfully")

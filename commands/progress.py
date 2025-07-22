@@ -1,3 +1,4 @@
+# Entire file commented out for minimal bingo bot
 import discord
 from discord import app_commands, Interaction
 from discord.ext.commands import Bot

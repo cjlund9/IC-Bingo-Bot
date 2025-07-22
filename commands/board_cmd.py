@@ -1,3 +1,4 @@
+# Entire file commented out for minimal bingo bot
 import discord
 import os
 import time
