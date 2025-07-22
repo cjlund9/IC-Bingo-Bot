@@ -37,14 +37,14 @@ class SubmissionManagementView(View):
             # Debug log for tile index
             logger.info(f"[DEBUG] Submitting: team={self.team}, tile_index={self.tile_index}")
             # Mark the submission
-            success = mark_tile_submission(self.team, self.tile_index + 1, interaction.user.id, self.drop, quantity=1)
+            success = mark_tile_submission(self.team, self.tile_index, interaction.user.id, self.drop, quantity=1)
             
             if success:
                 # Update board
                 await update_board_message(interaction.guild, interaction.guild.me, team=self.team)
 
                 # Get tile info for response
-                progress = get_tile_progress(self.team, self.tile_index + 1)
+                progress = get_tile_progress(self.team, self.tile_index)
                 tile_name = progress.get("tile_name", f"Tile {self.tile_index}")
                 
                 await interaction.message.edit(
@@ -70,7 +70,7 @@ class SubmissionManagementView(View):
 
         try:
             # Get tile info for response
-            progress = get_tile_progress(self.team, self.tile_index + 1)
+            progress = get_tile_progress(self.team, self.tile_index)
             tile_name = progress.get("tile_name", f"Tile {self.tile_index}")
             
             await interaction.message.edit(
@@ -94,7 +94,7 @@ class SubmissionManagementView(View):
 
         try:
             # Get tile info for response
-            progress = get_tile_progress(self.team, self.tile_index + 1)
+            progress = get_tile_progress(self.team, self.tile_index)
             tile_name = progress.get("tile_name", f"Tile {self.tile_index}")
             
             await interaction.message.edit(
@@ -124,7 +124,7 @@ class SubmissionRemovalView(View):
 
     async def load_submissions(self):
         """Load submissions for the tile"""
-        progress = get_tile_progress(self.team, self.tile_index + 1)
+        progress = get_tile_progress(self.team, self.tile_index)
         self.submissions = progress.get("submissions", [])
         return self.submissions
 
@@ -201,7 +201,7 @@ class SubmissionSelect(Select):
             view = self.view
             
             # Remove the submission
-            success = remove_tile_submission(view.team, view.tile_index + 1, submission_index)
+            success = remove_tile_submission(view.team, view.tile_index, submission_index)
             
             if success:
                 # Update board
