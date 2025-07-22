@@ -11,8 +11,8 @@ class ApprovalView(View):
     def __init__(self, submitter: discord.User, tile_index: int, team: str, drop: str, submission_id: int = None):
         super().__init__(timeout=None)
         self.submitter = submitter
-        # Normalize tile_index from user input (1-based to 0-based)
-        self.tile_index = tile_index - 1
+        # Use tile_index as received (already 0-based from UI)
+        self.tile_index = tile_index
         self.team = team
         self.drop = drop
         self.submission_id = submission_id  # Store submission ID for approval

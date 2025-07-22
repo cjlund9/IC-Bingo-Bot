@@ -21,8 +21,8 @@ class HoldReviewView(View):
     ):
         super().__init__(timeout=None)
         self.submitter = submitter
-        # Normalize tile_index from user input (1-based to 0-based)
-        self.tile_index = tile_index - 1
+        # Use tile_index as received (already 0-based from UI)
+        self.tile_index = tile_index
         self.original_channel_id = original_channel_id
         self.team = team
         self.drop = drop  # 🧠 Store the drop item

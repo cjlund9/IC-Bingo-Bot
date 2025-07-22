@@ -15,8 +15,8 @@ class SubmissionManagementView(View):
     def __init__(self, team: str, tile_index: int, drop: str):
         super().__init__(timeout=None)
         self.team = team
-        # Normalize tile_index from user input (1-based to 0-based)
-        self.tile_index = tile_index - 1
+        # Use tile_index as received (already 0-based from UI)
+        self.tile_index = tile_index
         self.drop = drop
 
     async def interaction_allowed(self, interaction: Interaction) -> bool:
