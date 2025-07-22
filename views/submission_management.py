@@ -35,11 +35,20 @@ class SubmissionManagementView(View):
         await interaction.response.defer(ephemeral=True)
 
         try:
-            # Use self.tile_index for DB and display (already 0-based)
-            logger.info(f"[DEBUG] UI submitted tile_index={self.tile_index}")
-            # Mark the submission
-            success = mark_tile_submission(self.team, self.tile_index, interaction.user.id, self.drop, quantity=1)
-            
+            # Find the most recent pending submission for this team, tile, and drop
+            from storage import approve_submission
+            import sqlite3
+            conn = sqlite3.connect('leaderboard.db')
+            cursor = conn.cursor()
+            cursor.execute('''SELECT id FROM bingo_submissions WHERE team_name = ? AND tile_id = ? AND drop_name = ? AND status = 'pending' ORDER BY id DESC LIMIT 1''', (self.team, self.tile_index, self.drop))
+            row = cursor.fetchone()
+            conn.close()
+            if row:
+                submission_id = row[0]
+                success = approve_submission(submission_id, interaction.user.id)
+            else:
+                success = False
+
             if success:
                 # Update board
                 await update_board_message(interaction.guild, interaction.guild.me, team=self.team)
@@ -61,7 +70,8 @@ class SubmissionManagementView(View):
                 await interaction.followup.send("Submission approved and board updated!", ephemeral=True)
                 logger.info(f"Submission approved: Team={self.team}, Tile={self.tile_index + 1}, Drop={self.drop}")
             else:
-                await interaction.followup.send("❌ Failed to approve submission.", ephemeral=True)
+                await interaction.followup.send("❌ Failed to approve submission (no pending submission found).", ephemeral=True)
+                logger.warning(f"No pending submission found for approval: Team={self.team}, Tile={self.tile_index}, Drop={self.drop}")
                 
         except Exception as e:
             logger.error(f"Error approving submission: {e}")
