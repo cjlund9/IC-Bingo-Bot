@@ -178,11 +178,11 @@ def generate_board_image(placeholders: Optional[List[Dict[str, Any]]] = None,
             if i >= BOARD_SIZE * BOARD_SIZE:
                 logger.warning(f"Tile index {i} exceeds board size, skipping")
                 continue
-                
             tile_name = tile["name"] if isinstance(tile, dict) else str(tile)
             required = tile.get("drops_needed", 1) if isinstance(tile, dict) else 1
             progress = tile_status.get(i, 0)
-
+            logger.info(f"[DEBUG] Drawing tile: i={i}, tile_name={tile_name}, required={required}, progress={progress}")
+                
             row = i // BOARD_SIZE
             col = i % BOARD_SIZE
             x = col * TILE_SIZE

@@ -51,6 +51,7 @@ class ApprovalView(View):
         placeholders = load_placeholders()
         import logging
         logger = logging.getLogger(__name__)
+        logger.info(f"[DEBUG] Approving submission: tile_index={self.tile_index}, tile_name={placeholders[self.tile_index]['name'] if 0 <= self.tile_index < len(placeholders) else 'OUT OF RANGE'}")
         logger.info(f"[APPROVAL] Loaded {len(placeholders)} placeholders. Submission tile_index={self.tile_index}")
         # Defensive check for tile index
         if not (0 <= self.tile_index < len(placeholders)):
