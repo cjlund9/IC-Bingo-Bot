@@ -21,13 +21,18 @@ DEFAULT_TEAM = "Moles"  # Set to your default team name
 def setup_board_command(bot: Bot):
     @bot.tree.command(
         name="board",
-        description="Display the current bingo board",
+        description="Display the current bingo board for a team",
         guild=discord.Object(id=GUILD_ID)
     )
-    async def board_cmd(interaction: Interaction):
+    @app_commands.describe(team="Team to display the board for (Moles or Obor)")
+    @app_commands.choices(team=[
+        app_commands.Choice(name="Moles", value="Moles"),
+        app_commands.Choice(name="Obor", value="Obor")
+    ])
+    async def board_cmd(interaction: Interaction, team: str = "Moles"):
         start_time = time.time()
         await interaction.response.defer(ephemeral=False)
-        success = generate_board_image(team=DEFAULT_TEAM)
+        success = generate_board_image(team=team)
         if success and os.path.exists(OUTPUT_FILE):
             file = discord.File(OUTPUT_FILE)
             await interaction.followup.send(file=file)
