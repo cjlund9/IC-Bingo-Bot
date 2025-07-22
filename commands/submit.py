@@ -246,7 +246,19 @@ def setup_submit_command(bot: Bot):
 
             team = get_user_team(member)
 
-            # --- REMOVE POINT TILE LOGIC ---
+            # Fetch allowed drops for the selected tile
+            conn = sqlite3.connect('leaderboard.db')
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT btd.drop_name
+                FROM bingo_tiles bt
+                LEFT JOIN bingo_tile_drops btd ON bt.id = btd.tile_id
+                WHERE bt.tile_index = ?
+            ''', (tile_index,))
+            rows = cursor.fetchall()
+            conn.close()
+            drops = [row[0] for row in rows if row[0] is not None]
+
             # Strict drop name validation for all tiles
             drop_name = item
             if not drops or drop_name not in drops:
